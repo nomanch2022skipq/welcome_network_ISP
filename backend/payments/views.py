@@ -43,8 +43,8 @@ class CustomerListCreateAPIView(generics.ListCreateAPIView):
         queryset = Customer.objects.all()
         user = self.request.user
         
-        # Admins can see all customers. Employees can also see all customers now.
-        # The `has_object_permission` in IsAdminOrOwner will handle object-level permissions.
+        # Admins and employees can see all customers
+        # The `has_object_permission` in IsAdminOrOwner will handle object-level permissions for updates/deletes
         return queryset
 
     def perform_create(self, serializer):
@@ -54,7 +54,7 @@ class CustomerListCreateAPIView(generics.ListCreateAPIView):
 class CustomerRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CustomerSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, IsAdminOrOwner]
+    permission_classes = [IsAuthenticated]
     queryset = Customer.objects.all()
 
     def perform_update(self, serializer):
@@ -85,9 +85,21 @@ class UserRegistrationView(APIView):
 
 class UserListView(generics.ListAPIView):
     serializer_class = UserSerializer
-    permission_classes = [IsAdminOrOwner]
+    permission_classes = [IsAuthenticated]
     pagination_class = CustomPagination
-    queryset = User.objects.all()
+    
+    def get_queryset(self):
+        queryset = User.objects.all()
+        user = self.request.user
+        
+        # Apply access control based on user type
+        # Non-admins should only see themselves
+        if not (user.is_superuser or user.is_staff):
+            print(f"Applying non-admin access control for users: filtering by user=user")
+            queryset = queryset.filter(id=user.id)
+            print("User permissions filter applied")
+        
+        return queryset
 
 class UserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UserSerializer
@@ -203,14 +215,24 @@ class PaymentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
 class LogListView(generics.ListAPIView):
     serializer_class = LogSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['user__username', 'action', 'description']
     ordering_fields = ['created_at', 'user__username', 'action']
     pagination_class = CustomPagination
     
     def get_queryset(self):
-        return Log.objects.all()
+        queryset = Log.objects.all()
+        user = self.request.user
+        
+        # Apply access control based on user type
+        # Non-admins should only see logs related to their own actions
+        if not (user.is_superuser or user.is_staff):
+            print(f"Applying non-admin access control for logs: filtering by user=user")
+            queryset = queryset.filter(user=user)
+            print("Log permissions filter applied")
+        
+        return queryset
 
 class CurrentUserView(APIView):
     permission_classes = [IsAuthenticated]

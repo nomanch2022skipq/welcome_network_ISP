@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
-import { paymentService, customerService, userService } from '../services/api';
+import { paymentService, customerService, userService, logService } from '../services/api';
 import { Line, Doughnut, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -43,6 +43,7 @@ const Dashboard = () => {
     totalAmounts: [],
     recentPayments: [],
     users: [],
+    logs: [],
   });
   const [loading, setLoading] = useState(true);
   const [timePeriod, setTimePeriod] = useState('monthly');
@@ -73,12 +74,13 @@ const Dashboard = () => {
     const totalPeriodData = {};
 
     if (period === 'daily') {
-      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const currentWeekStart = getStartOfWeek(now);
 
       labels = [];
       for (let i = 0; i < 7; i++) {
-        labels.push(dayNames[(i + 1) % 7]);
+        const date = new Date(currentWeekStart);
+        date.setDate(currentWeekStart.getDate() + i);
+        labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })); // e.g., Jun 10
       }
 
       payments.forEach(p => {
@@ -86,8 +88,8 @@ const Dashboard = () => {
         pDate.setHours(0, 0, 0, 0);
 
         if (pDate >= currentWeekStart && pDate <= now) {
-          const dayIndex = (pDate.getDay() + 6) % 7;
-          totalPeriodData[dayNames[(dayIndex + 1) % 7]] = (totalPeriodData[dayNames[(dayIndex + 1) % 7]] || 0) + parseFloat(p.amount);
+          const label = pDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          totalPeriodData[label] = (totalPeriodData[label] || 0) + parseFloat(p.amount);
         }
       });
 
@@ -136,59 +138,92 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const [paymentsResponse, customersResponse, usersResponse] = await Promise.all([
-        paymentService.getPayments(),
+      let startDateParam = null;
+      let endDateParam = null;
+      const now = new Date();
+
+      if (timePeriod === 'daily') {
+        const currentWeekStart = getStartOfWeek(now);
+        startDateParam = currentWeekStart.toISOString().split('T')[0];
+        endDateParam = now.toISOString().split('T')[0];
+      } else if (timePeriod === 'weekly') {
+        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        startDateParam = currentMonthStart.toISOString().split('T')[0];
+        endDateParam = now.toISOString().split('T')[0];
+      } else if (timePeriod === 'monthly') {
+        const currentYearStart = new Date(now.getFullYear(), 0, 1);
+        startDateParam = currentYearStart.toISOString().split('T')[0];
+        endDateParam = now.toISOString().split('T')[0];
+      } else if (timePeriod === 'yearly') {
+        const fiveYearsAgo = new Date(now.getFullYear() - 5, 0, 1);
+        startDateParam = fiveYearsAgo.toISOString().split('T')[0];
+        endDateParam = now.toISOString().split('T')[0];
+      }
+
+      const paymentParams = {};
+      if (startDateParam && endDateParam) {
+        paymentParams.start_date = startDateParam;
+        paymentParams.end_date = endDateParam;
+        paymentParams.page_size = 9999; // Request all data for charting
+      }
+
+      const [paymentsResponse, customersResponse, logsResponse] = await Promise.all([
+        paymentService.getPayments(paymentParams),
         customerService.getCustomers(),
-        userService.getUsers(),
+        logService.getLogs(),
       ]);
+      
+      // Try to fetch users separately with error handling
+      let usersResponse = null;
+      try {
+        usersResponse = await userService.getUsers();
+      } catch (error) {
+        console.warn('Could not fetch users (this is normal for employees):', error);
+        usersResponse = null;
+      }
       
       const payments = paymentsResponse.results || paymentsResponse;
       const customers = customersResponse.results || customersResponse;
-      const usersData = usersResponse.results || usersResponse;
+      const usersData = usersResponse ? (usersResponse.results || usersResponse) : null;
+      const logsData = logsResponse.results || logsResponse;
       
       console.log('Fetched Payments:', payments);
       console.log('Fetched Customers:', customers);
       console.log('Fetched Users:', usersData);
+      console.log('Fetched Logs:', logsData);
       
-      // For employees, filter data to only show their own records
-      let filteredPayments = payments;
-      let filteredCustomers = customers;
+      // Backend now properly filters data based on user role, so no need for client-side filtering
+      const totalAmount = payments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
+      const activeCustomers = customers.filter(customer => customer.is_active).length;
       
-      if (!isAdmin()) {
-        // Employees can only see their own payments and customers
-        filteredPayments = payments.filter(p => p.created_by && p.created_by.id === user.id);
-        filteredCustomers = customers.filter(c => c.created_by && c.created_by.id === user.id);
-      }
-      
-      const totalAmount = filteredPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
-      const activeCustomers = filteredCustomers.filter(customer => customer.is_active).length;
-      
-      const activeUsers = usersData.filter(user => user.is_active).length;
-      const inactiveUsers = usersData.filter(user => !user.is_active).length;
+      // For user stats, employees might not have access to all users, so handle gracefully
+      const activeUsers = usersData ? usersData.filter(user => user.is_active).length : 0;
+      const inactiveUsers = usersData ? usersData.filter(user => !user.is_active).length : 0;
 
       // Apply user filter if admin and specific user selected
       const chartPayments = (!isAdmin() || selectedUser === 'all') 
-        ? filteredPayments 
-        : filteredPayments.filter(p => p.customer && p.customer.created_by && p.customer.created_by.id === selectedUser);
+        ? payments 
+        : payments.filter(p => p.customer && p.customer.created_by && p.customer.created_by.id === selectedUser);
       
-      console.log('Filtered Payments:', chartPayments);
+      console.log('Chart Payments:', chartPayments);
 
       const { labels, totalAmounts } = processPaymentDataForChart(chartPayments, timePeriod);
       console.log('Processed Chart Labels:', labels);
       console.log('Processed Total Amounts:', totalAmounts);
 
       setStats({
-        totalPayments: filteredPayments.length,
+        totalPayments: payments.length,
         totalAmount,
-        totalCustomers: filteredCustomers.length,
+        totalCustomers: customers.length,
         activeCustomers,
-        totalUsers: usersData.length,
+        totalUsers: usersData ? usersData.length : 0,
         activeUsers,
         inactiveUsers,
         chartLabels: labels,
         totalAmounts: totalAmounts,
-        recentPayments: filteredPayments.slice(0, 10),
-        users: usersData, // Populate users for the dropdown
+        recentPayments: payments.slice(0, 10),
+        users: usersData || [], // Populate users for the dropdown
+        logs: logsData ? logsData.slice(0, 10) : [], // Store top 10 filtered logs
       });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -295,6 +330,11 @@ const Dashboard = () => {
 
   // Helper function to get color for username
   const getColorForUsername = (username) => {
+    // Return a default color if username is not provided
+    if (!username) {
+      return 'bg-gray-100 text-gray-800'; // A neutral color
+    }
+
     const colors = [
       'bg-blue-100 text-blue-800',
       'bg-green-100 text-green-800',
@@ -481,7 +521,7 @@ const Dashboard = () => {
                         <Typography variant="body2" color="text.secondary">{payment.description || 'No description'}</Typography>
                         {isAdmin() && payment.created_by && (
                           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                            Submitted by: <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getColorForUsername(payment.created_by.username)}`}>
+                            Submitted by: <span className={`inline-flex items-center px-4 py-1 rounded-full text-xs font-medium ${getColorForUsername(payment.created_by.username)}`}>
                               {payment.created_by.username}
                             </span>
                           </Typography>
@@ -496,6 +536,39 @@ const Dashboard = () => {
                 ) : (
                   <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
                     <Typography>No recent payments to display.</Typography>
+                  </Box>
+                )}
+              </div>
+            </Box>
+          </CardContent>
+        </Card>
+
+        <Card className="p-6 rounded-xl shadow-lg">
+          <CardContent>
+            <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', mb: 2 }}>
+              Recent Activities
+            </Typography>
+            <Box sx={{ minHeight: 320, maxHeight: 320, overflowY: 'auto' }}>
+              <div className="space-y-4">
+                {stats.logs.length > 0 ? (
+                  stats.logs.map((log) => (
+                    <div key={log.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-100 animate-fade-in-up">
+                      <div>
+                        <Typography variant="body2" sx={{ fontWeight: 'semibold' }}>{log.description}</Typography>
+                        <Typography variant="caption" color="text.secondary">{new Date(log.created_at).toLocaleString()}</Typography>
+                      </div>
+                      {isAdmin() && log.user && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                          User: <span className={`inline-flex items-center px-4 py-1 rounded-full text-xs font-medium ${getColorForUsername(log.user.username)}`}>
+                            {log.user.username}
+                          </span>
+                        </Typography>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
+                    <Typography>No recent activities to display.</Typography>
                   </Box>
                 )}
               </div>
