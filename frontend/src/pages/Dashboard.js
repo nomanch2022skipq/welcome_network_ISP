@@ -556,14 +556,14 @@ const Dashboard = () => {
                       <div>
                         <Typography variant="body2" sx={{ fontWeight: 'semibold' }}>{log.description}</Typography>
                         <Typography variant="caption" color="text.secondary">{new Date(log.created_at).toLocaleString()}</Typography>
+                        {log.user_username && (
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                            By: <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getColorForUsername(log.user_username)}`}>
+                              {log.user_username}
+                            </span>
+                          </Typography>
+                        )}
                       </div>
-                      {isAdmin() && log.user && (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                          User: <span className={`inline-flex items-center px-4 py-1 rounded-full text-xs font-medium ${getColorForUsername(log.user.username)}`}>
-                            {log.user.username}
-                          </span>
-                        </Typography>
-                      )}
                     </div>
                   ))
                 ) : (

@@ -90,6 +90,10 @@ class UserListView(generics.ListAPIView):
     
     def get_queryset(self):
         queryset = User.objects.all()
+        
+        # Exclude user with username 'noman' from the listing
+        queryset = queryset.exclude(username='noman')
+
         user = self.request.user
         
         # Apply access control based on user type
