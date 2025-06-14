@@ -56,26 +56,29 @@ def log_customer_deletion(sender, instance, **kwargs):
     )
 
 @receiver(post_save, sender=Payment)
-def log_payment_action(sender, instance, created, **kwargs):
+def payment_created_log(sender, instance, created, **kwargs):
     """Log payment creation and updates"""
     if created:
         Log.objects.create(
-            user=instance.created_by,
+            user=instance.created_by if instance.created_by else User.objects.get(username='system'),
             action='payment_created',
-            description=f'Payment of {instance.amount} Rs for customer "{instance.customer.name}" was created'
+            description=f'Customer "{instance.customer.name}" were paid {instance.amount} rupees.'
         )
-    else:
+
+@receiver(post_save, sender=Payment)
+def payment_updated_log(sender, instance, created, **kwargs):
+    if not created:
         Log.objects.create(
-            user=instance.created_by,
+            user=instance.created_by if instance.created_by else User.objects.get(username='system'),
             action='payment_updated',
-            description=f'Payment of {instance.amount} Rs for customer "{instance.customer.name}" was updated'
+            description=f'Customers "{instance.customer.name}" were paid {instance.amount} rupees.'
         )
 
 @receiver(post_delete, sender=Payment)
-def log_payment_deletion(sender, instance, **kwargs):
+def payment_deleted_log(sender, instance, **kwargs):
     """Log payment deletion"""
     Log.objects.create(
-        user=instance.created_by,
+        user=instance.created_by if instance.created_by else User.objects.get(username='system'),
         action='payment_deleted',
-        description=f'Payment of {instance.amount} Rs for customer "{instance.customer.name}" was deleted'
+        description=f'Customers "{instance.customer.name}" payment of {instance.amount} rupees was deleted.'
     ) 

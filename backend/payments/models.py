@@ -20,6 +20,7 @@ class Customer(models.Model):
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
+    package_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
@@ -44,7 +45,7 @@ class Customer(models.Model):
 class Payment(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='payments', default=None)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    date = models.DateField(auto_now_add=True)
+    date = models.DateTimeField(auto_now_add=True)
     description = models.CharField(max_length=255, blank=True)
     
     # Track who created/processed the payment

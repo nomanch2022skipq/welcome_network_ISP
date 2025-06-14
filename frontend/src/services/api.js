@@ -51,12 +51,17 @@ export const authService = {
     const response = await api.post('/token/refresh/', { refresh });
     return response.data;
   },
+
+  getCurrentUser: async () => {
+    const response = await api.get('/users/me/');
+    return response.data;
+  },
 };
 
 // User services
 export const userService = {
-  getUsers: async () => {
-    const response = await api.get('/users/');
+  getUsers: async (params = {}) => {
+    const response = await api.get('/users/', { params });
     return response.data;
   },
   
@@ -123,8 +128,8 @@ export const paymentService = {
 };
 
 export const logService = {
-  getLogs: async () => {
-    const response = await api.get('/logs/');
+  getLogs: async (params = {}) => {
+    const response = await api.get('/logs/', { params });
     return response.data;
   },
 };

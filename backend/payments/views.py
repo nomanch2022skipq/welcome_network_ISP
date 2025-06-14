@@ -8,6 +8,9 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
+from .pagination import CustomPagination
+import datetime
+from django.utils import timezone
 
 # Create your views here.
 
@@ -34,6 +37,7 @@ class CustomerListCreateAPIView(generics.ListCreateAPIView):
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'email', 'phone']
     ordering_fields = ['name', 'created_at']
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         queryset = Customer.objects.all()
@@ -52,6 +56,12 @@ class CustomerRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, IsAdminOrOwner]
     queryset = Customer.objects.all()
+
+    def perform_update(self, serializer):
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        instance.delete()
 
 class UserRegistrationView(APIView):
     permission_classes = [IsAdminUser]
@@ -73,46 +83,109 @@ class UserRegistrationView(APIView):
         
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-class UserListView(APIView):
+class UserListView(generics.ListAPIView):
+    serializer_class = UserSerializer
     permission_classes = [IsAdminOrOwner]
-    
-    def get(self, request):
-        users = User.objects.all()
-        serializer = UserSerializer(users, many=True)
-        return Response(serializer.data)
+    pagination_class = CustomPagination
+    queryset = User.objects.all()
 
 class UserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UserSerializer
     permission_classes = [IsAdminOrOwner]
     queryset = User.objects.all()
 
+    def perform_update(self, serializer):
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        instance.delete()
+
 class PaymentListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = PaymentSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['customer__name', 'customer__email', 'description']
-    ordering_fields = ['date', 'amount']
+    # Removed all filter_backends to gain full manual control
+    # filter_backends = [filters.OrderingFilter]
+    search_fields = ['customer__name', 'customer__email', 'description'] # Still useful for documentation
+    ordering_fields = ['date', 'amount'] # Still useful for documentation
+    ordering = ['-date'] # Default ordering
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         queryset = Payment.objects.all()
         user = self.request.user
-        
-        # Filter by date range if provided
+
+        print(f"Request User: {user.username}, Is Superuser: {user.is_superuser}, Is Staff: {user.is_staff}")
+
+        # Step 1: Apply default access control based on user type
+        # Non-admins should only see payments they themselves created.
+        if not (user.is_superuser or user.is_staff):
+            print("Applying non-admin access control: filtering by created_by=user")
+            queryset = queryset.filter(created_by=user)
+            print("Permissions filter applied")
+
+        # Step 2: Apply 'created_by' filter from query parameters
+        created_by_user_id = self.request.query_params.get('created_by')
+        print(f"Created By User ID from params: {created_by_user_id}")
+
+        if created_by_user_id and created_by_user_id != 'all':
+            if user.is_superuser or user.is_staff: # Admin can filter by any specific user
+                print(f"Admin: Applying created_by filter for ID: {created_by_user_id}")
+                queryset = queryset.filter(created_by_id=created_by_user_id)
+            else: # Non-admin: If they specify an ID, it *must* be their own. Otherwise, return empty.
+                if str(user.id) == created_by_user_id:
+                    print(f"Non-admin: Filtering by own ID ({created_by_user_id}). Queryset remains as per permissions.")
+                    # No additional filter needed here, as it's already covered by Step 1
+                else:
+                    print(f"Non-admin: Attempted to filter by another user ({created_by_user_id}). Returning empty queryset.")
+                    queryset = queryset.none() # This will make the queryset empty, overriding any previous filters.
+        elif not (user.is_superuser or user.is_staff) and created_by_user_id == 'all':
+            # If non-admin selects 'all', they still only see their own payments (already handled by Step 1).
+            print(f"Non-admin selected 'all'. Queryset remains as per permissions.")
+            # No explicit filter needed, already covered by Step 1.
+
+        print("Created By filter applied")
+
+        # Step 3: Apply date range filter if provided
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')
-        
-        # If not admin, only show payments for customers created by this user
-        if not (user.is_superuser or user.is_staff):
-            queryset = queryset.filter(customer__created_by=user)
-        
+        print(f"Date Range: Start={start_date}, End={end_date}")
+
         if start_date and end_date:
-            queryset = queryset.filter(date__range=[start_date, end_date])
-        
+            try:
+                start_date_obj = datetime.date.fromisoformat(start_date)
+                end_date_obj = datetime.date.fromisoformat(end_date)
+                # Convert to datetime objects for DateTimeField filtering
+                start_datetime = datetime.datetime.combine(start_date_obj, datetime.time.min)
+                end_datetime = datetime.datetime.combine(end_date_obj, datetime.time.max)
+                print(f"Applying date range filter: {start_datetime} to {end_datetime}")
+                queryset = queryset.filter(date__gte=start_datetime, date__lte=end_datetime)
+                print("Date range filter applied")
+            except ValueError as e:
+                print(f"Invalid date format received or parsing error: {e}")
+                pass # Continue with other filters even if date parsing fails
+
+        # Step 4: Manually apply search filter
+        search_term = self.request.query_params.get('search', None)
+        print(f"Search Term: {search_term}")
+        if search_term:
+            print(f"Applying search filter for term: '{search_term}'")
+            queryset = queryset.filter(
+                Q(customer__name__icontains=search_term) |
+                Q(customer__email__icontains=search_term) |
+                Q(description__icontains=search_term)
+            )
+            print("Search filter applied")
+
+        # Step 5: Apply ordering manually
+        order_by = self.request.query_params.get('ordering', '-date')
+        print(f"Applying ordering by: {order_by}")
+        queryset = queryset.order_by(order_by)
+
+        print("All filters applied successfully")
         return queryset
 
     def perform_create(self, serializer):
-        # Set the created_by field to current user
         serializer.save(created_by=self.request.user)
 
 class PaymentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -121,6 +194,12 @@ class PaymentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
     permission_classes = [IsAuthenticated, IsAdminOrOwner]
     queryset = Payment.objects.all()
 
+    def perform_update(self, serializer):
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        instance.delete()
+
 class LogListView(generics.ListAPIView):
     serializer_class = LogSerializer
     authentication_classes = [JWTAuthentication]
@@ -128,6 +207,15 @@ class LogListView(generics.ListAPIView):
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['user__username', 'action', 'description']
     ordering_fields = ['created_at', 'user__username', 'action']
+    pagination_class = CustomPagination
     
     def get_queryset(self):
         return Log.objects.all()
+
+class CurrentUserView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user
+        serializer = UserSerializer(user)
+        return Response(serializer.data)

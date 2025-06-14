@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { customerService } from '../services/api';
+import { useNotification } from '../contexts/NotificationContext';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import { customerService, paymentService } from '../services/api';
+import Pagination from '../components/Pagination';
 
 const CustomerManagement = () => {
   const { user, isAdmin } = useAuth();
@@ -9,6 +12,7 @@ const CustomerManagement = () => {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [newCustomer, setNewCustomer] = useState({
@@ -16,14 +20,36 @@ const CustomerManagement = () => {
     email: '',
     phone: '',
     address: '',
+    package_fee: '',
+  });
+  const [newPayment, setNewPayment] = useState({
+    amount: '',
+    description: '',
   });
   const [activeMenuId, setActiveMenuId] = useState(null); // State to track which menu is open
   const menuButtonRefs = useRef({}); // Ref to store individual menu button elements
   const menuPosition = useRef({ top: 0, left: 0 }); // To store menu position
 
+  const { showSuccess, showError } = useNotification();
+
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    hasNext: false,
+    hasPrevious: false,
+    totalItems: 0,
+    itemsPerPage: 10
+  });
+
   useEffect(() => {
     fetchCustomers();
-  }, [searchTerm]);
+  }, [searchTerm, pagination.currentPage, pagination.itemsPerPage]);
+
+  // Auto refresh data every 30 seconds
+  useAutoRefresh(() => {
+    fetchCustomers();
+  }, [searchTerm, pagination.currentPage, pagination.itemsPerPage], 30000);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -45,12 +71,36 @@ const CustomerManagement = () => {
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const params = {};
+      const params = {
+        page: pagination.currentPage,
+        page_size: pagination.itemsPerPage
+      };
       if (searchTerm) {
         params.search = searchTerm;
       }
-      const data = await customerService.getCustomers(params);
-      setCustomers(data);
+      const response = await customerService.getCustomers(params);
+      
+      // Handle paginated response
+      if (response.results) {
+        setCustomers(response.results);
+        setPagination(prev => ({
+          ...prev,
+          currentPage: response.current_page || 1,
+          totalPages: response.total_pages || 1,
+          hasNext: response.has_next || false,
+          hasPrevious: response.has_previous || false,
+          totalItems: response.count || 0,
+          itemsPerPage: response.page_size || prev.itemsPerPage
+        }));
+      } else {
+        // Fallback for non-paginated response
+        setCustomers(response);
+        setPagination(prev => ({
+          ...prev,
+          totalItems: response.length || 0,
+          totalPages: Math.ceil((response.length || 0) / prev.itemsPerPage)
+        }));
+      }
     } catch (error) {
       console.error('Error fetching customers:', error);
     } finally {
@@ -68,10 +118,15 @@ const CustomerManagement = () => {
         email: '',
         phone: '',
         address: '',
+        package_fee: '',
       });
+      // Reset to first page after adding
+      setPagination(prev => ({ ...prev, currentPage: 1 }));
       fetchCustomers();
+      showSuccess('Customer added successfully');
     } catch (error) {
       console.error('Error creating customer:', error);
+      showError('Error creating customer');
     }
   };
 
@@ -82,8 +137,10 @@ const CustomerManagement = () => {
       setShowEditModal(false);
       setSelectedCustomer(null);
       fetchCustomers();
+      showSuccess('Customer updated successfully');
     } catch (error) {
       console.error('Error updating customer:', error);
+      showError('Error updating customer');
     }
   };
 
@@ -92,16 +149,70 @@ const CustomerManagement = () => {
       try {
         await customerService.deleteCustomer(customerId);
         fetchCustomers();
+        showSuccess('Customer deleted successfully');
       } catch (error) {
         console.error('Error deleting customer:', error);
+        showError('Error deleting customer');
       }
     }
+  };
+
+  const handlePageChange = (page) => {
+    setPagination(prev => ({ ...prev, currentPage: page }));
+  };
+
+  const handlePageSizeChange = (newPageSize) => {
+    setPagination(prev => ({ 
+      ...prev, 
+      itemsPerPage: newPageSize,
+      currentPage: 1 // Reset to first page when changing page size
+    }));
   };
 
   const openEditModal = (customer) => {
     setSelectedCustomer({ ...customer });
     setShowEditModal(true);
     setActiveMenuId(null); // Close menu after selecting edit
+  };
+
+  const openPaymentModal = (customer) => {
+    setSelectedCustomer(customer);
+    setNewPayment({
+      amount: customer.package_fee || '',
+      description: '',
+    });
+    setShowPaymentModal(true);
+    setActiveMenuId(null); // Close menu after selecting add payment
+  };
+
+  const handleAddPayment = async (e) => {
+    e.preventDefault();
+    try {
+      const paymentData = {
+        customer_id: selectedCustomer.id,
+        amount: newPayment.amount,
+        description: newPayment.description,
+      };
+      await paymentService.createPayment(paymentData);
+      setShowPaymentModal(false);
+      setNewPayment({ amount: '', description: '' });
+      setSelectedCustomer(null);
+      fetchCustomers(); // Refresh customers data after adding payment
+      showSuccess('Payment added successfully');
+    } catch (error) {
+      console.error('Error creating payment:', error);
+      showError('Error creating payment');
+    }
+  };
+
+  // Helper function to format currency
+  const formatAmount = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'PKR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
   };
 
   const toggleMenu = (customerId, buttonElement) => {
@@ -137,12 +248,14 @@ const CustomerManagement = () => {
           <h1 className="text-3xl font-bold text-gray-900">Customer Management</h1>
           <p className="text-gray-600">Manage customer information</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary"
-        >
-          Add Customer
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="btn-primary"
+          >
+            Add Customer
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -177,7 +290,7 @@ const CustomerManagement = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm opacity-75">Total Customers</p>
-              <p className="text-2xl font-bold">{customers.length}</p>
+              <p className="text-2xl font-bold">{pagination.totalItems}</p>
             </div>
           </div>
         </div>
@@ -220,111 +333,141 @@ const CustomerManagement = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Customer
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contact Info
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created By
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {customers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{customer.name}</div>
-                        <div className="text-sm text-gray-500">{customer.email}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{customer.phone || 'N/A'}</div>
-                      <div className="text-sm text-gray-500 truncate max-w-xs">{customer.address || 'No address'}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {customer.created_by ? customer.created_by.username : 'System'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        customer.is_active 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {customer.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(customer.created_at)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="relative flex justify-end items-center h-full">
-                        <button
-                          ref={el => menuButtonRefs.current[customer.id] = el} // Assign ref to button
-                          type="button"
-                          className="flex items-center justify-center p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
-                          onClick={(e) => toggleMenu(customer.id, e.currentTarget)}
-                          aria-expanded={activeMenuId === customer.id ? 'true' : 'false'}
-                          aria-haspopup="true"
-                        >
-                          <span className="material-icons text-xl">more_vert</span>
-                        </button>
-
-                        {activeMenuId === customer.id && ReactDOM.createPortal(
-                          <div
-                            className="menu-dropdown-content origin-top-right absolute rounded-md shadow-lg bg-white border-0 focus:outline-none z-50"
-                            role="menu"
-                            aria-orientation="vertical"
-                            aria-labelledby={`options-menu-${customer.id}`}
-                            style={{ top: `${menuPosition.current.top}px`, left: `${menuPosition.current.left}px` }}
-                          >
-                            <div className="py-1">
-                              <button
-                                onClick={() => openEditModal(customer)}
-                                className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
-                                role="menuitem"
-                              >
-                                <span className="material-icons mr-3 text-lg group-hover:text-indigo-600">edit</span>
-                                Update
-                              </button>
-                            </div>
-                            <div className="py-1">
-                              <button
-                                onClick={() => handleDeleteCustomer(customer.id)}
-                                className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
-                                role="menuitem"
-                              >
-                                <span className="material-icons mr-3 text-lg group-hover:text-red-600">delete</span>
-                                Delete
-                              </button>
-                            </div>
-                          </div>,
-                          document.getElementById('portal-root')
-                        )}
-                      </div>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Customer
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Contact Info
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Package Fee
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created By
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {customers.map((customer) => (
+                    <tr key={customer.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{customer.name}</div>
+                          <div className="text-sm text-gray-500">{customer.email}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{customer.phone || 'N/A'}</div>
+                        <div className="text-sm text-gray-500 truncate max-w-[200px]">{customer.address || 'No address'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{formatAmount(customer.package_fee)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {customer.created_by ? customer.created_by.username : 'System'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          customer.is_active 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {customer.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(customer.created_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="relative flex justify-end items-center h-full">
+                          <button
+                            ref={el => menuButtonRefs.current[customer.id] = el} // Assign ref to button
+                            type="button"
+                            className="flex items-center justify-center p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                            onClick={(e) => toggleMenu(customer.id, e.currentTarget)}
+                            aria-expanded={activeMenuId === customer.id ? 'true' : 'false'}
+                            aria-haspopup="true"
+                          >
+                            <span className="material-icons text-xl">more_vert</span>
+                          </button>
+
+                          {activeMenuId === customer.id && ReactDOM.createPortal(
+                            <div
+                              className="menu-dropdown-content origin-top-right absolute rounded-md shadow-lg bg-white border-0 focus:outline-none z-50"
+                              role="menu"
+                              aria-orientation="vertical"
+                              aria-labelledby={`options-menu-${customer.id}`}
+                              style={{ top: `${menuPosition.current.top}px`, left: `${menuPosition.current.left}px` }}
+                            >
+                              <div className="py-1">
+                                <button
+                                  onClick={() => openEditModal(customer)}
+                                  className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                                  role="menuitem"
+                                >
+                                  <span className="material-icons mr-3 text-lg group-hover:text-indigo-600">edit</span>
+                                  Update
+                                </button>
+                              </div>
+                              <div className="py-1">
+                                <button
+                                  onClick={() => handleDeleteCustomer(customer.id)}
+                                  className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                                  role="menuitem"
+                                >
+                                  <span className="material-icons mr-3 text-lg group-hover:text-red-600">delete</span>
+                                  Delete
+                                </button>
+                              </div>
+                              <div className="py-1">
+                                <button
+                                  onClick={() => openPaymentModal(customer)}
+                                  className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                                  role="menuitem"
+                                >
+                                  <span className="material-icons mr-3 text-lg group-hover:text-blue-600">payment</span>
+                                  Add Payment
+                                </button>
+                              </div>
+                            </div>,
+                            document.getElementById('portal-root')
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            {/* Pagination */}
+            <Pagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              hasNext={pagination.hasNext}
+              hasPrevious={pagination.hasPrevious}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              totalItems={pagination.totalItems}
+              itemsPerPage={pagination.itemsPerPage}
+            />
+          </>
         )}
       </div>
 
@@ -371,6 +514,16 @@ const CustomerManagement = () => {
                     rows="3"
                     value={newCustomer.address}
                     onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Package Fee</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="input-field"
+                    value={newCustomer.package_fee}
+                    onChange={(e) => setNewCustomer({...newCustomer, package_fee: e.target.value})}
                   />
                 </div>
                 <div className="flex justify-end space-x-3">
@@ -437,6 +590,16 @@ const CustomerManagement = () => {
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700">Package Fee</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="input-field"
+                    value={selectedCustomer.package_fee || ''}
+                    onChange={(e) => setSelectedCustomer({...selectedCustomer, package_fee: e.target.value})}
+                  />
+                </div>
+                <div>
                   <label className="flex items-center">
                     <input
                       type="checkbox"
@@ -457,6 +620,50 @@ const CustomerManagement = () => {
                   </button>
                   <button type="submit" className="btn-primary">
                     Update Customer
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Payment Modal */}
+      {showPaymentModal && selectedCustomer && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Add Payment</h3>
+              <form onSubmit={handleAddPayment} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Amount</label>
+                  <input
+                    type="text"
+                    required
+                    className="input-field"
+                    value={newPayment.amount}
+                    onChange={(e) => setNewPayment({...newPayment, amount: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Description</label>
+                  <textarea
+                    className="input-field"
+                    rows="3"
+                    value={newPayment.description}
+                    onChange={(e) => setNewPayment({...newPayment, description: e.target.value})}
+                  />
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowPaymentModal(false)}
+                    className="btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-primary">
+                    Add Payment
                   </button>
                 </div>
               </form>

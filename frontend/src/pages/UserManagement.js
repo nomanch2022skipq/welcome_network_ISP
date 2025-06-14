@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { userService } from '../services/api';
+import { useNotification } from '../contexts/NotificationContext';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import Pagination from '../components/Pagination';
 
 const UserManagement = () => {
   const { isAdmin } = useAuth();
@@ -21,11 +24,30 @@ const UserManagement = () => {
   const menuButtonRefs = useRef({}); // Ref to store individual menu button elements
   const menuPosition = useRef({ top: 0, left: 0 }); // To store menu position
 
+  const { showSuccess, showError } = useNotification();
+
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    hasNext: false,
+    hasPrevious: false,
+    totalItems: 0,
+    itemsPerPage: 10
+  });
+
   useEffect(() => {
     if (isAdmin()) {
       fetchUsers();
     }
-  }, [isAdmin]);
+  }, [isAdmin, pagination.currentPage, pagination.itemsPerPage]);
+
+  // Auto refresh data every 30 seconds
+  useAutoRefresh(() => {
+    if (isAdmin()) {
+      fetchUsers();
+    }
+  }, [isAdmin, pagination.currentPage, pagination.itemsPerPage], 30000);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -47,8 +69,33 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const data = await userService.getUsers();
-      setUsers(data);
+      const params = {
+        page: pagination.currentPage,
+        page_size: pagination.itemsPerPage
+      };
+      const response = await userService.getUsers(params);
+      
+      // Handle paginated response
+      if (response.results) {
+        setUsers(response.results);
+        setPagination(prev => ({
+          ...prev,
+          currentPage: response.current_page || 1,
+          totalPages: response.total_pages || 1,
+          hasNext: response.has_next || false,
+          hasPrevious: response.has_previous || false,
+          totalItems: response.count || 0,
+          itemsPerPage: response.page_size || prev.itemsPerPage
+        }));
+      } else {
+        // Fallback for non-paginated response
+        setUsers(response);
+        setPagination(prev => ({
+          ...prev,
+          totalItems: response.length || 0,
+          totalPages: Math.ceil((response.length || 0) / prev.itemsPerPage)
+        }));
+      }
     } catch (error) {
       console.error('Error fetching users:', error);
     } finally {
@@ -70,9 +117,13 @@ const UserManagement = () => {
       await userService.createUser(userData);
       setShowAddModal(false);
       setNewUser({ username: '', email: '', password: '', user_type: 'employee' });
+      // Reset to first page after adding
+      setPagination(prev => ({ ...prev, currentPage: 1 }));
       fetchUsers();
+      showSuccess('User created successfully');
     } catch (error) {
       console.error('Error creating user:', error);
+      showError('Error creating user');
     }
   };
 
@@ -95,8 +146,10 @@ const UserManagement = () => {
       setSelectedUser(null);
       setEditPassword(''); // Clear password field
       fetchUsers();
+      showSuccess('User updated successfully');
     } catch (error) {
       console.error('Error updating user:', error);
+      showError('Error updating user');
     }
   };
 
@@ -105,10 +158,24 @@ const UserManagement = () => {
       try {
         await userService.deleteUser(userId);
         fetchUsers();
+        showSuccess('User deleted successfully');
       } catch (error) {
         console.error('Error deleting user:', error);
+        showError('Error deleting user');
       }
     }
+  };
+
+  const handlePageChange = (page) => {
+    setPagination(prev => ({ ...prev, currentPage: page }));
+  };
+
+  const handlePageSizeChange = (newPageSize) => {
+    setPagination(prev => ({ 
+      ...prev, 
+      itemsPerPage: newPageSize,
+      currentPage: 1 // Reset to first page when changing page size
+    }));
   };
 
   const openEditModal = (user) => {
@@ -154,12 +221,14 @@ const UserManagement = () => {
           <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
           <p className="text-gray-600">Manage system users and permissions</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary"
-        >
-          Add User
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="btn-primary"
+          >
+            Add User
+          </button>
+        </div>
       </div>
 
       {/* User Summary Cards */}
@@ -173,7 +242,7 @@ const UserManagement = () => {
             </div>
             <div>
               <p className="text-sm opacity-80">Total Users</p>
-              <p className="text-3xl font-bold mt-1">{users.length}</p>
+              <p className="text-3xl font-bold mt-1">{pagination.totalItems}</p>
             </div>
           </div>
         </div>
@@ -216,122 +285,136 @@ const UserManagement = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Role
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {users.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                          <span className="text-primary-600 font-medium">
-                            {user.username.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {user.username}
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      User
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Role
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {users.map((user) => (
+                    <tr key={user.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                            <span className="text-primary-600 font-medium">
+                              {user.username.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {user.username}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.is_staff || user.is_superuser
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {user.is_staff || user.is_superuser ? 'Admin' : 'Employee'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.is_active 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {user.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="relative flex justify-end items-center h-full">
-                        <button
-                          ref={el => menuButtonRefs.current[user.id] = el} // Assign ref to button
-                          type="button"
-                          className="flex items-center justify-center p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
-                          onClick={(e) => toggleMenu(user.id, e.currentTarget)}
-                          aria-expanded={activeMenuId === user.id ? 'true' : 'false'}
-                          aria-haspopup="true"
-                        >
-                          <span className="material-icons text-xl">more_vert</span>
-                        </button>
-
-                        {activeMenuId === user.id && ReactDOM.createPortal(
-                          <div
-                            className="menu-dropdown-content origin-top-right absolute rounded-md shadow-lg bg-white border-0 focus:outline-none z-50"
-                            role="menu"
-                            aria-orientation="vertical"
-                            aria-labelledby={`options-menu-${user.id}`}
-                            style={{ top: `${menuPosition.current.top}px`, left: `${menuPosition.current.left}px` }}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {user.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          user.is_staff || user.is_superuser
+                            ? 'bg-purple-100 text-purple-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {user.is_staff || user.is_superuser ? 'Admin' : 'Employee'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          user.is_active 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {user.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="relative flex justify-end items-center h-full">
+                          <button
+                            ref={el => menuButtonRefs.current[user.id] = el} // Assign ref to button
+                            type="button"
+                            className="flex items-center justify-center p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                            onClick={(e) => toggleMenu(user.id, e.currentTarget)}
+                            aria-expanded={activeMenuId === user.id ? 'true' : 'false'}
+                            aria-haspopup="true"
                           >
-                            <div className="py-1">
-                              <button
-                                onClick={() => openEditModal(user)}
-                                className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
-                                role="menuitem"
-                              >
-                                <span className="material-icons mr-3 text-lg group-hover:text-indigo-600">edit</span>
-                                Update
-                              </button>
-                            </div>
-                            <div className="py-1">
-                              <button
-                                onClick={() => handleDeleteUser(user.id)}
-                                className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
-                                role="menuitem"
-                              >
-                                <span className="material-icons mr-3 text-lg group-hover:text-red-600">delete</span>
-                                Delete
-                              </button>
-                            </div>
-                          </div>,
-                          document.getElementById('portal-root')
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                            <span className="material-icons text-xl">more_vert</span>
+                          </button>
+
+                          {activeMenuId === user.id && ReactDOM.createPortal(
+                            <div
+                              className="menu-dropdown-content origin-top-right absolute rounded-md shadow-lg bg-white border-0 focus:outline-none z-50"
+                              role="menu"
+                              aria-orientation="vertical"
+                              aria-labelledby={`options-menu-${user.id}`}
+                              style={{ top: `${menuPosition.current.top}px`, left: `${menuPosition.current.left}px` }}
+                            >
+                              <div className="py-1">
+                                <button
+                                  onClick={() => openEditModal(user)}
+                                  className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                                  role="menuitem"
+                                >
+                                  <span className="material-icons mr-3 text-lg group-hover:text-indigo-600">edit</span>
+                                  Update
+                                </button>
+                              </div>
+                              <div className="py-1">
+                                <button
+                                  onClick={() => handleDeleteUser(user.id)}
+                                  className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                                  role="menuitem"
+                                >
+                                  <span className="material-icons mr-3 text-lg group-hover:text-red-600">delete</span>
+                                  Delete
+                                </button>
+                              </div>
+                            </div>,
+                            document.getElementById('portal-root')
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              {users.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No users found</p>
+                </div>
+              )}
+            </div>
             
-            {users.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No users found</p>
-              </div>
-            )}
-          </div>
+            {/* Pagination */}
+            <Pagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              hasNext={pagination.hasNext}
+              hasPrevious={pagination.hasPrevious}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              totalItems={pagination.totalItems}
+              itemsPerPage={pagination.itemsPerPage}
+            />
+          </>
         )}
       </div>
 

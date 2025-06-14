@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   
   const { login } = useAuth();
+  const { showSuccess, showError } = useNotification();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -29,9 +31,11 @@ const Login = () => {
     const result = await login(formData.username, formData.password);
     
     if (result.success) {
+      showSuccess('Login successful! Welcome back.');
       navigate('/dashboard');
     } else {
       setError(result.error);
+      showError(result.error);
     }
     
     setLoading(false);

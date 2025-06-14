@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import Navigation from './components/Navigation';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -133,7 +134,9 @@ const AppContent = () => {
 const App = () => {
   return (
     <AuthProvider>
-      <AppContent />
+      <NotificationProvider>
+        <AppContent />
+      </NotificationProvider>
     </AuthProvider>
   );
 };

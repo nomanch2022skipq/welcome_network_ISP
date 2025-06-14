@@ -33,32 +33,31 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', data.access);
       localStorage.setItem('refresh', data.refresh);
       
-      // After successful login, fetch the detailed user info
-      const usersResponse = await userService.getUsers(); // Fetch all users
-      const loggedInUser = usersResponse.find(u => u.username === username);
-
-      if (loggedInUser) {
-        // Store all relevant user info, including is_staff and is_superuser
-        const userInfo = {
-          id: loggedInUser.id,
-          username: loggedInUser.username,
-          email: loggedInUser.email,
-          user_type: loggedInUser.user_type,
-          is_staff: loggedInUser.is_staff,
-          is_superuser: loggedInUser.is_superuser,
-          is_active: loggedInUser.is_active,
+      // After successful login, fetch the current user's details
+      const userInfo = await authService.getCurrentUser();
+      
+      if (userInfo) {
+        // Store all relevant user info
+        const userData = {
+          id: userInfo.id,
+          username: userInfo.username,
+          email: userInfo.email,
+          user_type: userInfo.user_type,
+          is_staff: userInfo.is_staff,
+          is_superuser: userInfo.is_superuser,
+          is_active: userInfo.is_active,
         };
-        localStorage.setItem('user', JSON.stringify(userInfo));
-        setUser(userInfo);
+        localStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
         return { success: true };
       } else {
-        // This case should ideally not happen if login is successful
         return { success: false, error: 'User details not found after login' };
       }
     } catch (error) {
+      console.error('Login error:', error);
       return { 
         success: false, 
-        error: error.response?.data?.detail || 'Login failed. Please check your credentials.' 
+        error: error.response?.data?.detail || error.message || 'Login failed. Please check your credentials.' 
       };
     }
   };

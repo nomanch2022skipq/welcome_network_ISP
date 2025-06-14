@@ -1,26 +1,70 @@
 import React, { useEffect, useState } from 'react';
 import { logService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import Pagination from '../components/Pagination';
 
 const Logs = () => {
   const { isAdmin } = useAuth();
+  const { showSuccess } = useNotification();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    hasNext: false,
+    hasPrevious: false,
+    totalItems: 0,
+    itemsPerPage: 10
+  });
 
   useEffect(() => {
     if (isAdmin && isAdmin()) {
       fetchLogs();
     }
     // eslint-disable-next-line
-  }, []);
+  }, [pagination.currentPage, pagination.itemsPerPage]);
+
+  // Auto refresh data every 30 seconds
+  useAutoRefresh(() => {
+    if (isAdmin && isAdmin()) {
+      fetchLogs();
+    }
+  }, [isAdmin, pagination.currentPage, pagination.itemsPerPage], 30000);
 
   const fetchLogs = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await logService.getLogs();
-      setLogs(data);
+      const params = {
+        page: pagination.currentPage,
+        page_size: pagination.itemsPerPage
+      };
+      const response = await logService.getLogs(params);
+      
+      // Handle paginated response
+      if (response.results) {
+        setLogs(response.results);
+        setPagination(prev => ({
+          ...prev,
+          currentPage: response.current_page || 1,
+          totalPages: response.total_pages || 1,
+          hasNext: response.has_next || false,
+          hasPrevious: response.has_previous || false,
+          totalItems: response.count || 0,
+          itemsPerPage: response.page_size || prev.itemsPerPage
+        }));
+      } else {
+        // Fallback for non-paginated response
+        setLogs(response);
+        setPagination(prev => ({
+          ...prev,
+          totalItems: response.length || 0,
+          totalPages: Math.ceil((response.length || 0) / prev.itemsPerPage)
+        }));
+      }
     } catch (err) {
       console.error('Error fetching logs:', err);
       if (err.response?.data) {
@@ -44,6 +88,18 @@ const Logs = () => {
     }
   };
 
+  const handlePageChange = (page) => {
+    setPagination(prev => ({ ...prev, currentPage: page }));
+  };
+
+  const handlePageSizeChange = (newPageSize) => {
+    setPagination(prev => ({ 
+      ...prev, 
+      itemsPerPage: newPageSize,
+      currentPage: 1 // Reset to first page when changing page size
+    }));
+  };
+
   if (!isAdmin || !isAdmin()) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -58,8 +114,12 @@ const Logs = () => {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">System Logs</h1>
-        <p className="text-gray-600">All actions performed in the system are listed below.</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">System Logs</h1>
+            <p className="text-gray-600">All actions performed in the system are listed below.</p>
+          </div>
+        </div>
       </div>
       {loading ? (
         <div className="flex items-center justify-center py-8">
@@ -133,6 +193,18 @@ const Logs = () => {
               )}
             </tbody>
           </table>
+          
+          {/* Pagination */}
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            hasNext={pagination.hasNext}
+            hasPrevious={pagination.hasPrevious}
+            totalItems={pagination.totalItems}
+            itemsPerPage={pagination.itemsPerPage}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
         </div>
       )}
     </div>

@@ -55,7 +55,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Customer
-        fields = ['id', 'name', 'email', 'phone', 'address', 'is_active', 
+        fields = ['id', 'name', 'email', 'phone', 'address', 'package_fee', 'is_active', 
                  'created_at', 'updated_at', 'created_by']
 
 class PaymentSerializer(serializers.ModelSerializer):
