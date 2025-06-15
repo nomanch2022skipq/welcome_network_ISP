@@ -92,13 +92,15 @@ const Navigation = () => {
       {/* Logo/Brand */}
       <div className="flex items-center justify-between h-16 px-4 bg-gradient-to-r from-primary-600 to-primary-700">
         <div className="flex items-center">
-          <h1 className={`text-xl font-bold text-white ${isSidebarCollapsed ? 'hidden' : 'block'}`}>Welcome Network</h1>
+          <h1 className={`text-responsive-lg font-bold text-white ${isSidebarCollapsed ? 'hidden' : 'block'}`}>
+            Welcome Network
+          </h1>
         </div>
         
         {/* Desktop collapse/expand button in header */}
         <button
           onClick={() => toggleSidebar()}
-          className="hidden lg:flex items-center justify-center w-8 h-8 text-white hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors duration-200"
+          className="hidden lg:flex items-center justify-center w-8 h-8 text-white hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors duration-200 touch-target"
           aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           title={isSidebarCollapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
         >
@@ -117,7 +119,7 @@ const Navigation = () => {
             </span>
           </div>
           <div className={`ml-3 ${isSidebarCollapsed ? 'hidden' : 'block'}`}>
-            <p className="text-sm font-medium text-gray-900 truncate">{user?.username}</p>
+            <p className="text-responsive-sm font-medium text-gray-900 truncate">{user?.username}</p>
             <p className="text-xs text-gray-500">{isAdmin ? 'Administrator' : 'Employee'}</p>
           </div>
         </div>
@@ -129,7 +131,7 @@ const Navigation = () => {
           <Link
             key={item.path}
             to={item.path}
-            className={`group flex items-center rounded-lg transition-all duration-200 ${
+            className={`group flex items-center rounded-lg transition-all duration-200 touch-target ${
               location.pathname === item.path
                 ? 'bg-primary-100 text-primary-700 shadow-sm'
                 : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
@@ -168,7 +170,7 @@ const Navigation = () => {
       <div className="p-4 border-t border-gray-200">
         <button
           onClick={handleLogout}
-          className={`w-full flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition-all duration-200 ${
+          className={`w-full flex items-center px-3 py-2 text-responsive-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition-all duration-200 touch-target ${
             isSidebarCollapsed ? 'justify-center' : ''
           }`}
           title={isSidebarCollapsed ? 'Logout' : undefined}
@@ -189,22 +191,22 @@ const Navigation = () => {
       {/* Mobile menu overlay */}
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-gray-600 bg-opacity-75 z-40 lg:hidden sidebar-overlay"
+          className="nav-mobile-overlay"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
       {/* Keyboard shortcut tip */}
       {hasShownShortcutTip && (
-        <div className="fixed top-4 right-4 z-50 bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg max-w-sm">
+        <div className="fixed top-4 right-4 z-50 bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg max-w-sm hidden lg:block">
           <div className="flex items-start">
             <div className="flex-1">
-              <p className="text-sm font-medium">💡 Pro Tip</p>
+              <p className="text-responsive-sm font-medium">💡 Pro Tip</p>
               <p className="text-xs mt-1">Use <kbd className="px-1 py-0.5 bg-blue-700 rounded text-xs">Ctrl+B</kbd> to toggle the sidebar!</p>
             </div>
             <button
               onClick={dismissShortcutTip}
-              className="ml-2 text-blue-200 hover:text-white"
+              className="ml-2 text-blue-200 hover:text-white touch-target"
               aria-label="Dismiss tip"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,7 +221,7 @@ const Navigation = () => {
       <div className="lg:hidden fixed top-4 left-4 z-50">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="mobile-menu-button p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+          className="mobile-menu-button p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 touch-target"
           aria-label="Toggle mobile menu"
           aria-expanded={isMobileMenuOpen}
         >
@@ -234,7 +236,7 @@ const Navigation = () => {
         <div className="hidden lg:block fixed top-4 left-4 z-50">
           <button
             onClick={toggleSidebar}
-            className="mobile-menu-button p-2 rounded-md bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 shadow-lg border border-gray-200"
+            className="mobile-menu-button p-2 rounded-md bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 shadow-lg border border-gray-200 touch-target"
             aria-label="Expand sidebar"
             title="Expand sidebar (Ctrl+B)"
           >

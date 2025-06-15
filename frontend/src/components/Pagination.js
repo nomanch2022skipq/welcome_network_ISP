@@ -28,7 +28,7 @@ const Pagination = ({
 
   const getPageNumbers = () => {
     const pages = [];
-    const maxVisiblePages = 5;
+    const maxVisiblePages = window.innerWidth < 640 ? 3 : 5; // Fewer pages on mobile
     
     if (totalPages <= maxVisiblePages) {
       // Show all pages if total is small
@@ -59,12 +59,13 @@ const Pagination = ({
   }
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
-      <div className="flex justify-between flex-1 sm:hidden">
+    <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6 gap-4">
+      {/* Mobile pagination */}
+      <div className="flex justify-between w-full sm:hidden">
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={!hasPrevious}
-          className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${
+          className={`relative inline-flex items-center px-4 py-2 text-responsive-sm font-medium rounded-md touch-target ${
             hasPrevious
               ? 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300'
@@ -72,10 +73,15 @@ const Pagination = ({
         >
           Previous
         </button>
+        <div className="flex items-center space-x-2">
+          <span className="text-responsive-sm text-gray-700">
+            Page {currentPage} of {totalPages}
+          </span>
+        </div>
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={!hasNext}
-          className={`relative inline-flex items-center px-4 py-2 ml-3 text-sm font-medium rounded-md ${
+          className={`relative inline-flex items-center px-4 py-2 text-responsive-sm font-medium rounded-md touch-target ${
             hasNext
               ? 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300'
@@ -85,10 +91,11 @@ const Pagination = ({
         </button>
       </div>
       
+      {/* Desktop pagination */}
       <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
           <div>
-            <p className="text-sm text-gray-700">
+            <p className="text-responsive-sm text-gray-700">
               Showing <span className="font-medium">{startItem}</span> to{' '}
               <span className="font-medium">{endItem}</span> of{' '}
               <span className="font-medium">{totalItems}</span> results
@@ -97,14 +104,14 @@ const Pagination = ({
           
           {/* Page Size Selector */}
           <div className="flex items-center space-x-2">
-            <label htmlFor="page-size" className="text-sm text-gray-700">
+            <label htmlFor="page-size" className="text-responsive-sm text-gray-700">
               Show:
             </label>
             <select
               id="page-size"
               value={itemsPerPage}
               onChange={(e) => onPageSizeChange(parseInt(e.target.value))}
-              className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="border border-gray-300 rounded-md px-2 py-1 text-responsive-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 touch-target"
             >
               {pageSizeOptions.map(size => (
                 <option key={size} value={size}>
@@ -112,7 +119,7 @@ const Pagination = ({
                 </option>
               ))}
             </select>
-            <span className="text-sm text-gray-700">per page</span>
+            <span className="text-responsive-sm text-gray-700">per page</span>
           </div>
         </div>
         
@@ -122,7 +129,7 @@ const Pagination = ({
             <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={!hasPrevious}
-              className={`relative inline-flex items-center px-2 py-2 rounded-l-md border text-sm font-medium ${
+              className={`relative inline-flex items-center px-2 py-2 rounded-l-md border text-responsive-sm font-medium touch-target ${
                 hasPrevious
                   ? 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                   : 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
@@ -139,7 +146,7 @@ const Pagination = ({
               <button
                 key={page}
                 onClick={() => onPageChange(page)}
-                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                className={`relative inline-flex items-center px-3 sm:px-4 py-2 border text-responsive-sm font-medium touch-target ${
                   page === currentPage
                     ? 'z-10 bg-primary-50 border-primary-500 text-primary-600'
                     : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
@@ -153,7 +160,7 @@ const Pagination = ({
             <button
               onClick={() => onPageChange(currentPage + 1)}
               disabled={!hasNext}
-              className={`relative inline-flex items-center px-2 py-2 rounded-r-md border text-sm font-medium ${
+              className={`relative inline-flex items-center px-2 py-2 rounded-r-md border text-responsive-sm font-medium touch-target ${
                 hasNext
                   ? 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                   : 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'

@@ -104,20 +104,20 @@ const Logs = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-          <p className="text-gray-600">You don't have permission to access this page.</p>
+          <h2 className="text-responsive-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
+          <p className="text-responsive-base text-gray-600">You don't have permission to access this page.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="container-responsive">
       <div className="mb-6">
-        <div className="flex justify-between items-center">
+        <div className="flex-responsive justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">System Logs</h1>
-            <p className="text-gray-600">All actions performed in the system are listed below.</p>
+            <h1 className="text-responsive-3xl font-extrabold text-gray-900">System Logs</h1>
+            <p className="text-responsive-base text-gray-600 mt-1">All actions performed in the system are listed below.</p>
           </div>
         </div>
       </div>
@@ -134,43 +134,38 @@ const Logs = () => {
               </svg>
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Error</h3>
-              <div className="mt-2 text-sm text-red-700">{error}</div>
+              <h3 className="text-responsive-sm font-medium text-red-800">Error</h3>
+              <div className="mt-2 text-responsive-sm text-red-700">{error}</div>
             </div>
           </div>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {logs.length === 0 ? (
-                <tr>
-                  <td colSpan="4" className="text-center py-8 text-gray-500">No logs found.</td>
-                </tr>
-              ) : (
-                logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
-                          <span className="text-primary-600 font-medium text-sm">
-                            {log.user_username?.charAt(0).toUpperCase() || 'U'}
-                          </span>
-                        </div>
-                        <div className="ml-3">
-                          <div className="text-sm font-medium text-gray-900">{log.user_username || 'Unknown User'}</div>
+        <div className="card">
+          <h3 className="text-responsive-lg font-semibold mb-4">Activity Logs</h3>
+          
+          {/* Mobile Card View */}
+          <div className="block sm:hidden space-y-4">
+            {logs.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No logs found.</p>
+              </div>
+            ) : (
+              logs.map((log) => (
+                <div key={log.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                        <span className="text-primary-600 font-medium text-sm">
+                          {log.user_username?.charAt(0).toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {log.user_username || 'Unknown User'}
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    </div>
+                    <div>
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                         log.action?.includes('created') ? 'bg-green-100 text-green-800' :
                         log.action?.includes('updated') ? 'bg-blue-100 text-blue-800' :
@@ -179,20 +174,90 @@ const Logs = () => {
                       }`}>
                         {log.action_display || log.action}
                       </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 max-w-md truncate" title={log.description}>
+                    </div>
+                  </div>
+                  
+                  {log.description && (
+                    <div className="mb-3">
+                      <span className="text-xs text-gray-500 uppercase tracking-wider">Description</span>
+                      <div className="mt-1 text-sm text-gray-900">
                         {log.description}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(log.created_at).toLocaleString()}
-                    </td>
+                    </div>
+                  )}
+                  
+                  <div className="border-t pt-3">
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <div>
+                        <span className="block">Date:</span>
+                        <span className="font-medium">{new Date(log.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <div>
+                        <span className="block">Time:</span>
+                        <span className="font-medium">{new Date(log.created_at).toLocaleTimeString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden sm:block table-responsive">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {logs.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="text-center py-8 text-gray-500">No logs found.</td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  logs.map((log) => (
+                    <tr key={log.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                            <span className="text-primary-600 font-medium text-sm">
+                              {log.user_username?.charAt(0).toUpperCase() || 'U'}
+                            </span>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{log.user_username || 'Unknown User'}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          log.action?.includes('created') ? 'bg-green-100 text-green-800' :
+                          log.action?.includes('updated') ? 'bg-blue-100 text-blue-800' :
+                          log.action?.includes('deleted') ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {log.action_display || log.action}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900 max-w-md truncate" title={log.description}>
+                          {log.description}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(log.created_at).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
           
           {/* Pagination */}
           <Pagination

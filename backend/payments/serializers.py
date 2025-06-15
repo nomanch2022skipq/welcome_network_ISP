@@ -51,12 +51,13 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 class CustomerSerializer(serializers.ModelSerializer):
-    created_by = UserSerializer(read_only=True)
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+    created_by_user_type = serializers.CharField(source='created_by.user_type', read_only=True)
     
     class Meta:
         model = Customer
         fields = ['id', 'name', 'email', 'phone', 'address', 'package_fee', 'is_active', 
-                 'created_at', 'updated_at', 'created_by']
+                 'created_at', 'updated_at', 'created_by_username', 'created_by_user_type']
 
 class PaymentSerializer(serializers.ModelSerializer):
     customer = CustomerSerializer(read_only=True)
@@ -65,11 +66,12 @@ class PaymentSerializer(serializers.ModelSerializer):
         source='customer', 
         write_only=True
     )
-    created_by = UserSerializer(read_only=True)
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+    created_by_user_type = serializers.CharField(source='created_by.user_type', read_only=True)
     
     class Meta:
         model = Payment
-        fields = ['id', 'customer', 'customer_id', 'amount', 'date', 'description', 'created_by']
+        fields = ['id', 'customer', 'customer_id', 'amount', 'date', 'description', 'created_by_username', 'created_by_user_type']
 
 class LogSerializer(serializers.ModelSerializer):
     user_username = serializers.CharField(source='user.username', read_only=True)

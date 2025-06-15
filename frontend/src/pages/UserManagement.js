@@ -206,25 +206,25 @@ const UserManagement = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-          <p className="text-gray-600">You don't have permission to access this page.</p>
+          <h2 className="text-responsive-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
+          <p className="text-responsive-base text-gray-600">You don't have permission to access this page.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="px-6 pt-6 pb-6">
+    <div className="container-responsive">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex-responsive justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-600">Manage system users and permissions</p>
+          <h1 className="text-responsive-3xl font-extrabold text-gray-900">User Management</h1>
+          <p className="text-responsive-base text-gray-600 mt-1">Manage system users and permissions</p>
         </div>
-        <div className="flex space-x-3">
+        <div className="action-buttons">
           <button
             onClick={() => setShowAddModal(true)}
-            className="btn-primary"
+            className="action-button btn-primary"
           >
             Add User
           </button>
@@ -232,45 +232,45 @@ const UserManagement = () => {
       </div>
 
       {/* User Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="card bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
-          <div className="flex items-center space-x-4">
-            <div className="p-4 rounded-full bg-white bg-opacity-20">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="stats-grid mb-6">
+        <div className="card bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-4 sm:p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="p-3 sm:p-4 rounded-full bg-white bg-opacity-20">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
             <div>
-              <p className="text-sm opacity-80">Total Users</p>
-              <p className="text-3xl font-bold mt-1">{pagination.totalItems}</p>
+              <p className="text-responsive-sm opacity-80">Total Users</p>
+              <p className="text-responsive-2xl sm:text-3xl font-bold mt-1">{pagination.totalItems}</p>
             </div>
           </div>
         </div>
 
-        <div className="card bg-gradient-to-br from-teal-500 to-teal-600 text-white p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
-          <div className="flex items-center space-x-4">
-            <div className="p-4 rounded-full bg-white bg-opacity-20">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="card bg-gradient-to-br from-teal-500 to-teal-600 text-white p-4 sm:p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="p-3 sm:p-4 rounded-full bg-white bg-opacity-20">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div>
-              <p className="text-sm opacity-80">Active Users</p>
-              <p className="text-3xl font-bold mt-1">{activeUsers}</p>
+              <p className="text-responsive-sm opacity-80">Active Users</p>
+              <p className="text-responsive-2xl sm:text-3xl font-bold mt-1">{activeUsers}</p>
             </div>
           </div>
         </div>
 
-        <div className="card bg-gradient-to-br from-rose-500 to-rose-600 text-white p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
-          <div className="flex items-center space-x-4">
-            <div className="p-4 rounded-full bg-white bg-opacity-20">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="card bg-gradient-to-br from-rose-500 to-rose-600 text-white p-4 sm:p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="p-3 sm:p-4 rounded-full bg-white bg-opacity-20">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div>
-              <p className="text-sm opacity-80">Inactive Users</p>
-              <p className="text-3xl font-bold mt-1">{inactiveUsers}</p>
+              <p className="text-responsive-sm opacity-80">Inactive Users</p>
+              <p className="text-responsive-2xl sm:text-3xl font-bold mt-1">{inactiveUsers}</p>
             </div>
           </div>
         </div>
@@ -278,7 +278,7 @@ const UserManagement = () => {
 
       {/* Users Table */}
       <div className="card mb-6">
-        <h3 className="text-lg font-semibold mb-4">System Users</h3>
+        <h3 className="text-responsive-lg font-semibold mb-4">System Users</h3>
         
         {loading ? (
           <div className="flex items-center justify-center py-8">
@@ -286,7 +286,103 @@ const UserManagement = () => {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* Mobile Card View */}
+            <div className="block sm:hidden space-y-4">
+              {users.map((user) => (
+                <div key={user.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                        <span className="text-primary-600 font-medium text-sm">
+                          {user.username.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {user.username}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {user.email}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <button
+                        ref={el => menuButtonRefs.current[user.id] = el}
+                        type="button"
+                        className="flex items-center justify-center p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 touch-target"
+                        onClick={(e) => toggleMenu(user.id, e.currentTarget)}
+                        aria-expanded={activeMenuId === user.id ? 'true' : 'false'}
+                        aria-haspopup="true"
+                      >
+                        <span className="material-icons text-xl">more_vert</span>
+                      </button>
+
+                      {activeMenuId === user.id && ReactDOM.createPortal(
+                        <div
+                          className="menu-dropdown-content origin-top-right absolute right-0 mt-2 rounded-md shadow-lg bg-white border-0 focus:outline-none z-50 min-w-[120px]"
+                          role="menu"
+                          aria-orientation="vertical"
+                          aria-labelledby={`options-menu-${user.id}`}
+                        >
+                          <div className="py-1">
+                            <button
+                              onClick={() => openEditModal(user)}
+                              className="group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left touch-target"
+                              role="menuitem"
+                            >
+                              <span className="material-icons mr-3 text-lg group-hover:text-indigo-600">edit</span>
+                              Update
+                            </button>
+                          </div>
+                          <div className="py-1">
+                            <button
+                              onClick={() => handleDeleteUser(user.id)}
+                              className="group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left touch-target"
+                              role="menuitem"
+                            >
+                              <span className="material-icons mr-3 text-lg group-hover:text-red-600">delete</span>
+                              Delete
+                            </button>
+                          </div>
+                        </div>,
+                        document.getElementById('portal-root')
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-xs text-gray-500 uppercase tracking-wider">Role</span>
+                      <div className="mt-1">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          user.is_staff || user.is_superuser
+                            ? 'bg-purple-100 text-purple-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {user.is_staff || user.is_superuser ? 'Admin' : 'Employee'}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 uppercase tracking-wider">Status</span>
+                      <div className="mt-1">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          user.is_active 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {user.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden sm:block table-responsive">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -313,7 +409,7 @@ const UserManagement = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                            <span className="text-primary-600 font-medium">
+                            <span className="text-primary-600 font-medium text-sm">
                               {user.username.charAt(0).toUpperCase()}
                             </span>
                           </div>
@@ -348,9 +444,9 @@ const UserManagement = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="relative flex justify-end items-center h-full">
                           <button
-                            ref={el => menuButtonRefs.current[user.id] = el} // Assign ref to button
+                            ref={el => menuButtonRefs.current[user.id] = el}
                             type="button"
-                            className="flex items-center justify-center p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                            className="flex items-center justify-center p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 touch-target"
                             onClick={(e) => toggleMenu(user.id, e.currentTarget)}
                             aria-expanded={activeMenuId === user.id ? 'true' : 'false'}
                             aria-haspopup="true"
@@ -369,7 +465,7 @@ const UserManagement = () => {
                               <div className="py-1">
                                 <button
                                   onClick={() => openEditModal(user)}
-                                  className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                                  className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left touch-target"
                                   role="menuitem"
                                 >
                                   <span className="material-icons mr-3 text-lg group-hover:text-indigo-600">edit</span>
@@ -379,7 +475,7 @@ const UserManagement = () => {
                               <div className="py-1">
                                 <button
                                   onClick={() => handleDeleteUser(user.id)}
-                                  className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                                  className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left touch-target"
                                   role="menuitem"
                                 >
                                   <span className="material-icons mr-3 text-lg group-hover:text-red-600">delete</span>
@@ -395,13 +491,13 @@ const UserManagement = () => {
                   ))}
                 </tbody>
               </table>
-              
-              {users.length === 0 && (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">No users found</p>
-                </div>
-              )}
             </div>
+            
+            {users.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No users found</p>
+              </div>
+            )}
             
             {/* Pagination */}
             <Pagination
@@ -420,18 +516,18 @@ const UserManagement = () => {
 
       {/* Add User Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Add New User</h3>
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3 className="text-responsive-lg font-semibold mb-4">Add New User</h3>
             
             <form onSubmit={handleAddUser} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-responsive-sm font-medium text-gray-700 mb-2">
                   Username
                 </label>
                 <input
                   type="text"
-                  className="input-field"
+                  className="input-field touch-target"
                   value={newUser.username}
                   onChange={(e) => setNewUser({...newUser, username: e.target.value})}
                   required
@@ -439,12 +535,12 @@ const UserManagement = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-responsive-sm font-medium text-gray-700 mb-2">
                   Email
                 </label>
                 <input
                   type="email"
-                  className="input-field"
+                  className="input-field touch-target"
                   value={newUser.email}
                   onChange={(e) => setNewUser({...newUser, email: e.target.value})}
                   required
@@ -452,12 +548,12 @@ const UserManagement = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-responsive-sm font-medium text-gray-700 mb-2">
                   Password
                 </label>
                 <input
                   type="password"
-                  className="input-field"
+                  className="input-field touch-target"
                   value={newUser.password}
                   onChange={(e) => setNewUser({...newUser, password: e.target.value})}
                   required
@@ -465,12 +561,12 @@ const UserManagement = () => {
               </div>
               
               <div>
-                <label htmlFor="user_type" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="user_type" className="block text-responsive-sm font-medium text-gray-700 mb-2">
                   User Type
                 </label>
                 <select
                   id="user_type"
-                  className="input-field"
+                  className="input-field touch-target"
                   value={newUser.user_type}
                   onChange={(e) => setNewUser({...newUser, user_type: e.target.value})}
                 >
@@ -479,17 +575,17 @@ const UserManagement = () => {
                 </select>
               </div>
               
-              <div className="flex space-x-3">
+              <div className="action-buttons">
                 <button
                   type="submit"
-                  className="btn-primary flex-1"
+                  className="action-button btn-primary"
                 >
                   Add User
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="btn-secondary flex-1"
+                  className="action-button btn-secondary"
                 >
                   Cancel
                 </button>
@@ -501,17 +597,17 @@ const UserManagement = () => {
 
       {/* Edit User Modal */}
       {showEditModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Edit User</h3>
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3 className="text-responsive-lg font-medium text-gray-900 mb-4">Edit User</h3>
             <form onSubmit={handleEditUser} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-responsive-sm font-medium text-gray-700 mb-2">
                   Username
                 </label>
                 <input
                   type="text"
-                  className="input-field"
+                  className="input-field touch-target"
                   value={selectedUser.username}
                   onChange={(e) => setSelectedUser({...selectedUser, username: e.target.value})}
                   required
@@ -519,12 +615,12 @@ const UserManagement = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-responsive-sm font-medium text-gray-700 mb-2">
                   Email
                 </label>
                 <input
                   type="email"
-                  className="input-field"
+                  className="input-field touch-target"
                   value={selectedUser.email}
                   onChange={(e) => setSelectedUser({...selectedUser, email: e.target.value})}
                   required
@@ -532,24 +628,24 @@ const UserManagement = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-responsive-sm font-medium text-gray-700 mb-2">
                   New Password (leave blank to keep current)
                 </label>
                 <input
                   type="password"
-                  className="input-field"
+                  className="input-field touch-target"
                   value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}
                 />
               </div>
 
               <div>
-                <label htmlFor="edit_user_type" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="edit_user_type" className="block text-responsive-sm font-medium text-gray-700 mb-2">
                   User Type
                 </label>
                 <select
                   id="edit_user_type"
-                  className="input-field"
+                  className="input-field touch-target"
                   value={selectedUser.user_type}
                   onChange={(e) => setSelectedUser({...selectedUser, user_type: e.target.value})}
                 >
@@ -562,25 +658,25 @@ const UserManagement = () => {
                 <label className="flex items-center">
                   <input
                     type="checkbox"
-                    className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                    className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 touch-target"
                     checked={selectedUser.is_active}
                     onChange={(e) => setSelectedUser({...selectedUser, is_active: e.target.checked})}
                   />
-                  <span className="ml-2 text-sm text-gray-700">Active</span>
+                  <span className="ml-2 text-responsive-sm text-gray-700">Active</span>
                 </label>
               </div>
 
-              <div className="flex space-x-3">
+              <div className="action-buttons">
                 <button
                   type="submit"
-                  className="btn-primary flex-1"
+                  className="action-button btn-primary"
                 >
                   Save Changes
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="btn-secondary flex-1"
+                  className="action-button btn-secondary"
                 >
                   Cancel
                 </button>

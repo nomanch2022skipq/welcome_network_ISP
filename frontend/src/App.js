@@ -67,7 +67,7 @@ const Layout = ({ children }) => {
       <div className={`flex-1 transition-all duration-300 ease-in-out ${
         isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
       }`}>
-        <div className={`px-4 lg:px-6 pb-6 transition-all duration-300 ease-in-out ${
+        <div className={`px-4 sm:px-6 lg:px-8 pb-6 transition-all duration-300 ease-in-out ${
           isSidebarCollapsed ? 'pt-20 lg:pt-6' : 'pt-16 lg:pt-6'
         }`}>
           {children}

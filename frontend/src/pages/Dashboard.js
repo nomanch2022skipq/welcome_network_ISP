@@ -358,129 +358,135 @@ const Dashboard = () => {
   }
 
   return (
-    <div>
+    <div className="container-responsive">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex-responsive justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Welcome back, {user?.username}!</p>
+          <h1 className="text-responsive-3xl font-extrabold text-gray-900">Dashboard</h1>
+          <p className="text-responsive-base text-gray-600 mt-1">Welcome back, {user?.username}!</p>
         </div>
         <div className="text-right">
-          <p className="text-md text-gray-500">Role: <span className="font-semibold text-primary-700">{isAdmin() ? 'Administrator' : 'Employee'}</span></p>
+          <p className="text-responsive-sm text-gray-500">Role: <span className="font-semibold text-primary-700">{isAdmin() ? 'Administrator' : 'Employee'}</span></p>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div className="card bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
-          <div className="flex items-center space-x-4">
-            <div className="p-4 rounded-full bg-white bg-opacity-20">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="stats-grid mb-6">
+        <div className="card bg-gradient-to-br from-green-500 to-green-600 text-white p-4 sm:p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="p-3 sm:p-4 rounded-full bg-white bg-opacity-20">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
               </svg>
             </div>
             <div>
-              <p className="text-sm opacity-80">Total Amount</p>
-              <p className="text-3xl font-bold mt-1">{formatLargeNumber(stats.totalAmount)}</p>
+              <p className="text-responsive-sm opacity-80">Total Amount</p>
+              <p className="text-responsive-2xl sm:text-3xl font-bold mt-1">{formatLargeNumber(stats.totalAmount)}</p>
             </div>
           </div>
         </div>
 
         {/* New User Stats Cards */}
         {isAdmin() && (
-          <div className="card bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
-            <div className="flex items-center space-x-4">
-              <div className="p-4 rounded-full bg-white bg-opacity-20">
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="card bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-4 sm:p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="p-3 sm:p-4 rounded-full bg-white bg-opacity-20">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
               <div>
-                <p className="text-sm opacity-80">Total Users</p>
-                <p className="text-3xl font-bold mt-1">{stats.totalUsers}</p>
+                <p className="text-responsive-sm opacity-80">Total Users</p>
+                <p className="text-responsive-2xl sm:text-3xl font-bold mt-1">{stats.totalUsers}</p>
               </div>
             </div>
           </div>
         )}
 
-        <div className="card bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
-          <div className="flex items-center space-x-4">
-            <div className="p-4 rounded-full bg-white bg-opacity-20">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="card bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 sm:p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="p-3 sm:p-4 rounded-full bg-white bg-opacity-20">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
               </svg>
             </div>
             <div>
-              <p className="text-sm opacity-80">Total Payments</p>
-              <p className="text-3xl font-bold mt-1">{stats.totalPayments}</p>
+              <p className="text-responsive-sm opacity-80">Total Payments</p>
+              <p className="text-responsive-2xl sm:text-3xl font-bold mt-1">{stats.totalPayments}</p>
             </div>
           </div>
         </div>
 
-        <div className="card bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
-          <div className="flex items-center space-x-4">
-            <div className="p-4 rounded-full bg-white bg-opacity-20">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="card bg-gradient-to-br from-purple-500 to-purple-600 text-white p-4 sm:p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="p-3 sm:p-4 rounded-full bg-white bg-opacity-20">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
             <div>
-              <p className="text-sm opacity-80">Total Customers</p>
-              <p className="text-3xl font-bold mt-1">{stats.totalCustomers}</p>
+              <p className="text-responsive-sm opacity-80">Total Customers</p>
+              <p className="text-responsive-2xl sm:text-3xl font-bold mt-1">{stats.totalCustomers}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Charts and Recent Payments */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <Card className="p-6 rounded-xl shadow-lg">
-          <CardContent>
-            <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-              {/* Left Section: Title and Time Period buttons (stacked) */}
+      <div className="grid-responsive-2 gap-responsive mb-6">
+        <Card className="p-4 sm:p-6 rounded-xl shadow-lg">
+          <CardContent className="p-0 sm:p-2">
+            <Box display="flex" flexDirection="column" sx={{ gap: 2, mb: 2 }}>
+              {/* Title and controls */}
               <Box display="flex" flexDirection="column" sx={{ gap: 1 }}>
-                {/* Title and subtitle */}
-                <Box display="flex" flexDirection="column">
-                  <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                    Payments
-                  </Typography>
-                </Box>
-                {/* Time Period buttons */}
-                <Box display="flex" sx={{ gap: 0.5, mt: 1 }}>
+                <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                  Payments
+                </Typography>
+                
+                {/* Time Period buttons - responsive */}
+                <Box display="flex" flexWrap="wrap" sx={{ gap: 0.5, mt: 1 }}>
                   <button
                     onClick={() => setTimePeriod('daily')}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${timePeriod === 'daily' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    className={`px-2 sm:px-3 py-1.5 rounded-md text-responsive-sm font-medium transition-colors touch-target ${
+                      timePeriod === 'daily' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
                   >
                     Daily
                   </button>
                   <button
                     onClick={() => setTimePeriod('weekly')}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${timePeriod === 'weekly' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    className={`px-2 sm:px-3 py-1.5 rounded-md text-responsive-sm font-medium transition-colors touch-target ${
+                      timePeriod === 'weekly' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
                   >
                     Weekly
                   </button>
                   <button
                     onClick={() => setTimePeriod('monthly')}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${timePeriod === 'monthly' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    className={`px-2 sm:px-3 py-1.5 rounded-md text-responsive-sm font-medium transition-colors touch-target ${
+                      timePeriod === 'monthly' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
                   >
                     Monthly
                   </button>
                   <button
                     onClick={() => setTimePeriod('yearly')}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${timePeriod === 'yearly' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    className={`px-2 sm:px-3 py-1.5 rounded-md text-responsive-sm font-medium transition-colors touch-target ${
+                      timePeriod === 'yearly' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
                   >
                     Yearly
                   </button>
                 </Box>
               </Box>
 
-              {/* Right Section: User dropdown only for admins */}
+              {/* User dropdown only for admins */}
               {isAdmin() && (
-                <Box display="flex" alignItems="center" flexWrap="nowrap" sx={{ gap: 2 }}>
-                  <Typography variant="body1" component="label" sx={{ whiteSpace: 'nowrap' }}>
+                <Box display="flex" flexDirection="column" sx={{ gap: 1, mt: 1 }}>
+                  <Typography variant="body2" component="label" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
                     User:
                   </Typography>
-                  <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 120 } }}>
                     <Select
                       id="user-select"
                       value={selectedUser}
@@ -500,42 +506,52 @@ const Dashboard = () => {
             </Box>
 
             {/* The Chart itself */}
-            <Box sx={{ height: 320 }}>
+            <Box sx={{ height: { xs: 250, sm: 280, md: 320 } }}>
               <Bar data={chartData} options={chartOptions} />
             </Box>
           </CardContent>
         </Card>
 
-        <Card className="p-6 rounded-xl shadow-lg">
-          <CardContent>
-            <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', mb: 2 }}>
+        <Card className="p-4 sm:p-6 rounded-xl shadow-lg">
+          <CardContent className="p-0 sm:p-2">
+            <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', mb: 2, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
               Recent Payments
             </Typography>
-            <Box sx={{ minHeight: 320, maxHeight: 320, overflowY: 'auto' }}>
-              <div className="space-y-4">
+            <Box sx={{ minHeight: { xs: 250, sm: 280, md: 320 }, maxHeight: { xs: 250, sm: 280, md: 320 }, overflowY: 'auto' }}>
+              <div className="space-y-3 sm:space-y-4">
                 {stats.recentPayments.length > 0 ? (
                   stats.recentPayments.map((payment) => (
-                    <div key={payment.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-100 animate-fade-in-up">
-                      <div>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 'semibold' }}>{payment.customer.name}</Typography>
-                        <Typography variant="body2" color="text.secondary">{payment.description || 'No description'}</Typography>
+                    <div key={payment.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-100 animate-fade-in-up gap-2">
+                      <div className="flex-1">
+                        <Typography variant="subtitle2" sx={{ fontWeight: 'semibold', fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                          {payment.customer.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                          {payment.description || 'No description'}
+                        </Typography>
                         {isAdmin() && payment.created_by && (
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                            Submitted by: <span className={`inline-flex items-center px-4 py-1 rounded-full text-xs font-medium ${getColorForUsername(payment.created_by.username)}`}>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                            Submitted by: <span className={`inline-flex items-center px-2 sm:px-4 py-1 rounded-full text-xs font-medium ${getColorForUsername(payment.created_by.username)}`}>
                               {payment.created_by.username}
                             </span>
                           </Typography>
                         )}
                       </div>
-                      <div className="text-right">
-                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: 'success.main' }}>{formatAmount(payment.amount)}</Typography>
-                        <Typography variant="caption" color="text.secondary">{new Date(payment.date).toLocaleDateString()}</Typography>
+                      <div className="text-right sm:text-right">
+                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: 'success.main', fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                          {formatAmount(payment.amount)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                          {new Date(payment.date).toLocaleDateString()}
+                        </Typography>
                       </div>
                     </div>
                   ))
                 ) : (
                   <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
-                    <Typography>No recent payments to display.</Typography>
+                    <Typography sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                      No recent payments to display.
+                    </Typography>
                   </Box>
                 )}
               </div>
@@ -543,22 +559,26 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="p-6 rounded-xl shadow-lg">
-          <CardContent>
-            <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', mb: 2 }}>
+        <Card className="p-4 sm:p-6 rounded-xl shadow-lg">
+          <CardContent className="p-0 sm:p-2">
+            <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', mb: 2, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
               Recent Activities
             </Typography>
-            <Box sx={{ minHeight: 320, maxHeight: 320, overflowY: 'auto' }}>
-              <div className="space-y-4">
+            <Box sx={{ minHeight: { xs: 250, sm: 280, md: 320 }, maxHeight: { xs: 250, sm: 280, md: 320 }, overflowY: 'auto' }}>
+              <div className="space-y-3 sm:space-y-4">
                 {stats.logs.length > 0 ? (
                   stats.logs.map((log) => (
-                    <div key={log.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-100 animate-fade-in-up">
-                      <div>
-                        <Typography variant="body2" sx={{ fontWeight: 'semibold' }}>{log.description}</Typography>
-                        <Typography variant="caption" color="text.secondary">{new Date(log.created_at).toLocaleString()}</Typography>
+                    <div key={log.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-100 animate-fade-in-up gap-2">
+                      <div className="flex-1">
+                        <Typography variant="body2" sx={{ fontWeight: 'semibold', fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                          {log.description}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                          {new Date(log.created_at).toLocaleString()}
+                        </Typography>
                         {log.user_username && (
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                            By: <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getColorForUsername(log.user_username)}`}>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                            By: <span className={`inline-flex items-center px-2 sm:px-4 py-1 rounded-full text-xs font-medium ${getColorForUsername(log.user_username)}`}>
                               {log.user_username}
                             </span>
                           </Typography>
@@ -568,7 +588,9 @@ const Dashboard = () => {
                   ))
                 ) : (
                   <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
-                    <Typography>No recent activities to display.</Typography>
+                    <Typography sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                      No recent activities to display.
+                    </Typography>
                   </Box>
                 )}
               </div>

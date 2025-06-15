@@ -12,6 +12,21 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  /* Improve touch targets on mobile */
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    @apply touch-manipulation;
+  }
+
+  /* Prevent horizontal scroll on mobile */
+  html,
+  body {
+    overflow-x: hidden;
+  }
 }
 
 @layer components {
@@ -24,11 +39,55 @@
   }
 
   .card {
-    @apply bg-white rounded-lg shadow-md p-6;
+    @apply bg-white rounded-lg shadow-md p-4 sm:p-6;
   }
 
   .input-field {
     @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  }
+
+  /* Responsive table styles */
+  .table-responsive {
+    @apply overflow-x-auto -mx-4 sm:mx-0;
+  }
+
+  .table-responsive table {
+    @apply min-w-full divide-y divide-gray-200;
+  }
+
+  .table-responsive th,
+  .table-responsive td {
+    @apply px-3 py-3 sm:px-6 sm:py-4;
+  }
+
+  /* Mobile-first card grid */
+  .stats-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6;
+  }
+
+  /* Responsive modal */
+  .modal-overlay {
+    @apply fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50;
+  }
+
+  .modal-content {
+    @apply relative top-4 mx-auto p-4 sm:p-5 border w-11/12 sm:w-96 lg:w-[500px] shadow-lg rounded-md bg-white;
+  }
+
+  /* Responsive form layouts */
+  .form-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
+  }
+
+  .form-full-width {
+    @apply sm:col-span-2;
+  }
+
+  /* Responsive navigation improvements */
+  .nav-mobile-overlay {
+    @apply fixed inset-0 bg-gray-600 bg-opacity-75 z-40 lg:hidden;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
 
   /* Sidebar specific styles */
@@ -81,6 +140,105 @@
     border-bottom: 4px solid transparent;
     border-right: 4px solid #1f2937;
   }
+
+  /* Responsive chart container */
+  .chart-container {
+    @apply w-full h-64 sm:h-80 lg:h-96;
+    position: relative;
+  }
+
+  /* Mobile-friendly action buttons */
+  .action-buttons {
+    @apply flex flex-col sm:flex-row gap-2 sm:gap-3;
+  }
+
+  .action-button {
+    @apply flex-1 sm:flex-none px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200;
+  }
+
+  /* Responsive text utilities */
+  .text-responsive-sm {
+    @apply text-xs sm:text-sm;
+  }
+
+  .text-responsive-base {
+    @apply text-sm sm:text-base;
+  }
+
+  .text-responsive-lg {
+    @apply text-base sm:text-lg;
+  }
+
+  .text-responsive-xl {
+    @apply text-lg sm:text-xl;
+  }
+
+  .text-responsive-2xl {
+    @apply text-xl sm:text-2xl;
+  }
+
+  .text-responsive-3xl {
+    @apply text-2xl sm:text-3xl;
+  }
+
+  /* Responsive spacing */
+  .space-responsive {
+    @apply space-y-4 sm:space-y-6;
+  }
+
+  .gap-responsive {
+    @apply gap-4 sm:gap-6;
+  }
+
+  /* Mobile-first responsive utilities */
+  .container-responsive {
+    @apply w-full px-4 sm:px-6 lg:px-8;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  /* Responsive flex utilities */
+  .flex-responsive {
+    @apply flex flex-col sm:flex-row;
+  }
+
+  .flex-responsive-reverse {
+    @apply flex flex-col-reverse sm:flex-row;
+  }
+
+  /* Responsive grid utilities */
+  .grid-responsive-1 {
+    @apply grid grid-cols-1;
+  }
+
+  .grid-responsive-2 {
+    @apply grid grid-cols-1 sm:grid-cols-2;
+  }
+
+  .grid-responsive-3 {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+  }
+
+  .grid-responsive-4 {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4;
+  }
+
+  /* Responsive visibility */
+  .hidden-mobile {
+    @apply hidden sm:block;
+  }
+
+  .visible-mobile {
+    @apply block sm:hidden;
+  }
+
+  .hidden-tablet {
+    @apply hidden lg:block;
+  }
+
+  .visible-tablet {
+    @apply block lg:hidden;
+  }
 }
 
 @layer utilities {
@@ -125,6 +283,48 @@
     .sidebar-width-collapsed {
       width: 16rem;
     }
+  }
+
+  /* Mobile-specific utilities */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Responsive typography */
+  .text-scale-xs {
+    font-size: clamp(0.75rem, 2vw, 0.875rem);
+  }
+
+  .text-scale-sm {
+    font-size: clamp(0.875rem, 2.5vw, 1rem);
+  }
+
+  .text-scale-base {
+    font-size: clamp(1rem, 3vw, 1.125rem);
+  }
+
+  .text-scale-lg {
+    font-size: clamp(1.125rem, 3.5vw, 1.25rem);
+  }
+
+  .text-scale-xl {
+    font-size: clamp(1.25rem, 4vw, 1.5rem);
+  }
+
+  .text-scale-2xl {
+    font-size: clamp(1.5rem, 5vw, 2rem);
+  }
+
+  .text-scale-3xl {
+    font-size: clamp(2rem, 6vw, 3rem);
   }
 }
 
