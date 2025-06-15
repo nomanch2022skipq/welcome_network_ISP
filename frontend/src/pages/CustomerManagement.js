@@ -419,7 +419,7 @@ const CustomerManagement = () => {
                         {formatAmount(customer.package_fee)}
                       </div>
                     </div>
-                    <div>
+                    <div className="text-right">
                       <span className="text-xs text-gray-500 uppercase tracking-wider">Status</span>
                       <div className="mt-1">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -439,10 +439,11 @@ const CustomerManagement = () => {
                         <span className="block">Created:</span>
                         <span className="font-medium">{formatDate(customer.created_at)}</span>
                       </div>
-                      <div>
-                        <span className="block">By:</span>
-                        <span className="font-medium">
-                          {customer.created_by ? customer.created_by.username : 'System'}
+                      <div className="text-right">
+                        <span className="block">By:  
+                        <span className='pl-1'>
+                          {customer.created_by_username ? customer.created_by : 'System'}
+                          </span>
                         </span>
                       </div>
                     </div>
