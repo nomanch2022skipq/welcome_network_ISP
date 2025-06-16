@@ -3,7 +3,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { paymentService, customerService, userService } from '../services/api';
 import Pagination from '../components/Pagination';
 import { useNotification } from '../contexts/NotificationContext';
-import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import {
   Box,
   Card,
@@ -90,15 +89,6 @@ const Payments = () => {
       fetchUsers();
     }
   }, [searchTerm, startDate, endDate, pagination.currentPage, pagination.itemsPerPage, selectedUser]);
-
-  // Auto refresh data every 30 seconds
-  useAutoRefresh(() => {
-    fetchPayments();
-    fetchCustomers();
-    if (isAdmin()) {
-      fetchUsers();
-    }
-  }, [searchTerm, startDate, endDate, pagination.currentPage, pagination.itemsPerPage, selectedUser], 30000);
 
   const fetchPayments = async () => {
     try {

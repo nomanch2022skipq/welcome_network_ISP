@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { userService } from '../services/api';
 import { useNotification } from '../contexts/NotificationContext';
-import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import Pagination from '../components/Pagination';
 import {
   Box,
@@ -81,13 +80,6 @@ const UserManagement = () => {
       fetchUsers();
     }
   }, [isAdmin, pagination.currentPage, pagination.itemsPerPage]);
-
-  // Auto refresh data every 30 seconds
-  useAutoRefresh(() => {
-    if (isAdmin()) {
-      fetchUsers();
-    }
-  }, [isAdmin, pagination.currentPage, pagination.itemsPerPage], 30000);
 
   const fetchUsers = async () => {
     try {

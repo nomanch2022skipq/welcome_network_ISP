@@ -157,11 +157,6 @@ const Dashboard = () => {
     // eslint-disable-next-line
   }, [timePeriod, selectedUser]);
 
-  // Auto refresh data every 30 seconds
-  useAutoRefresh(() => {
-    fetchDashboardData();
-  }, [timePeriod, selectedUser], 30000);
-
   const fetchDashboardData = async () => {
     try {
       let startDateParam = null;

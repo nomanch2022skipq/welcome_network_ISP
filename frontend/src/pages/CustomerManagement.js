@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { customerService, paymentService } from '../services/api';
 import Pagination from '../components/Pagination';
 import {
@@ -85,11 +84,6 @@ const CustomerManagement = () => {
   useEffect(() => {
     fetchCustomers();
   }, [searchTerm, pagination.currentPage, pagination.itemsPerPage]);
-
-  // Auto refresh data every 30 seconds
-  useAutoRefresh(() => {
-    fetchCustomers();
-  }, [searchTerm, pagination.currentPage, pagination.itemsPerPage], 30000);
 
   const fetchCustomers = async () => {
     try {

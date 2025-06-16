@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { logService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import Pagination from '../components/Pagination';
 import {
   Box,
@@ -49,13 +48,6 @@ const Logs = () => {
     }
     // eslint-disable-next-line
   }, [pagination.currentPage, pagination.itemsPerPage]);
-
-  // Auto refresh data every 30 seconds
-  useAutoRefresh(() => {
-    if (isAdmin && isAdmin()) {
-      fetchLogs();
-    }
-  }, [isAdmin, pagination.currentPage, pagination.itemsPerPage], 30000);
 
   const fetchLogs = async () => {
     setLoading(true);
