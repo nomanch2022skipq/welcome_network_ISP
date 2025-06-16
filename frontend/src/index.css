@@ -1,334 +1,78 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  body {
-    @apply bg-gray-50 text-gray-900;
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
-      "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
-      "Helvetica Neue", sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  /* Improve touch targets on mobile */
-  button,
-  a,
-  input,
-  select,
-  textarea {
-    @apply touch-manipulation;
-  }
-
-  /* Prevent horizontal scroll on mobile */
-  html,
-  body {
-    overflow-x: hidden;
-  }
+/* CSS Reset and Global Styles */
+* {
+  box-sizing: border-box;
 }
 
-@layer components {
-  .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
-  }
-
-  .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
-  }
-
-  .card {
-    @apply bg-white rounded-lg shadow-md p-4 sm:p-6;
-  }
-
-  .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
-  }
-
-  /* Responsive table styles */
-  .table-responsive {
-    @apply overflow-x-auto -mx-4 sm:mx-0;
-  }
-
-  .table-responsive table {
-    @apply min-w-full divide-y divide-gray-200;
-  }
-
-  .table-responsive th,
-  .table-responsive td {
-    @apply px-3 py-3 sm:px-6 sm:py-4;
-  }
-
-  /* Mobile-first card grid */
-  .stats-grid {
-    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6;
-  }
-
-  /* Responsive modal */
-  .modal-overlay {
-    @apply fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50;
-  }
-
-  .modal-content {
-    @apply relative top-4 mx-auto p-4 sm:p-5 border w-11/12 sm:w-96 lg:w-[500px] shadow-lg rounded-md bg-white;
-  }
-
-  /* Responsive form layouts */
-  .form-grid {
-    @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
-  }
-
-  .form-full-width {
-    @apply sm:col-span-2;
-  }
-
-  /* Responsive navigation improvements */
-  .nav-mobile-overlay {
-    @apply fixed inset-0 bg-gray-600 bg-opacity-75 z-40 lg:hidden;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
-
-  /* Sidebar specific styles */
-  .sidebar-transition {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .sidebar-overlay {
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
-
-  /* Mobile menu button animation */
-  .mobile-menu-button {
-    transition: transform 0.2s ease-in-out;
-  }
-
-  .mobile-menu-button:active {
-    transform: scale(0.95);
-  }
-
-  /* Tooltip styles for collapsed sidebar */
-  .sidebar-tooltip {
-    position: absolute;
-    left: 100%;
-    margin-left: 0.5rem;
-    padding: 0.5rem;
-    background-color: #1f2937;
-    color: white;
-    border-radius: 0.375rem;
-    font-size: 0.75rem;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease-in-out;
-    z-index: 60;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-      0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  }
-
-  .sidebar-tooltip::before {
-    content: "";
-    position: absolute;
-    left: -4px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 0;
-    height: 0;
-    border-top: 4px solid transparent;
-    border-bottom: 4px solid transparent;
-    border-right: 4px solid #1f2937;
-  }
-
-  /* Responsive chart container */
-  .chart-container {
-    @apply w-full h-64 sm:h-80 lg:h-96;
-    position: relative;
-  }
-
-  /* Mobile-friendly action buttons */
-  .action-buttons {
-    @apply flex flex-col sm:flex-row gap-2 sm:gap-3;
-  }
-
-  .action-button {
-    @apply flex-1 sm:flex-none px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200;
-  }
-
-  /* Responsive text utilities */
-  .text-responsive-sm {
-    @apply text-xs sm:text-sm;
-  }
-
-  .text-responsive-base {
-    @apply text-sm sm:text-base;
-  }
-
-  .text-responsive-lg {
-    @apply text-base sm:text-lg;
-  }
-
-  .text-responsive-xl {
-    @apply text-lg sm:text-xl;
-  }
-
-  .text-responsive-2xl {
-    @apply text-xl sm:text-2xl;
-  }
-
-  .text-responsive-3xl {
-    @apply text-2xl sm:text-3xl;
-  }
-
-  /* Responsive spacing */
-  .space-responsive {
-    @apply space-y-4 sm:space-y-6;
-  }
-
-  .gap-responsive {
-    @apply gap-4 sm:gap-6;
-  }
-
-  /* Mobile-first responsive utilities */
-  .container-responsive {
-    @apply w-full px-4 sm:px-6 lg:px-8;
-    max-width: 1280px;
-    margin: 0 auto;
-  }
-
-  /* Responsive flex utilities */
-  .flex-responsive {
-    @apply flex flex-col sm:flex-row;
-  }
-
-  .flex-responsive-reverse {
-    @apply flex flex-col-reverse sm:flex-row;
-  }
-
-  /* Responsive grid utilities */
-  .grid-responsive-1 {
-    @apply grid grid-cols-1;
-  }
-
-  .grid-responsive-2 {
-    @apply grid grid-cols-1 sm:grid-cols-2;
-  }
-
-  .grid-responsive-3 {
-    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
-  }
-
-  .grid-responsive-4 {
-    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4;
-  }
-
-  /* Responsive visibility */
-  .hidden-mobile {
-    @apply hidden sm:block;
-  }
-
-  .visible-mobile {
-    @apply block sm:hidden;
-  }
-
-  .hidden-tablet {
-    @apply hidden lg:block;
-  }
-
-  .visible-tablet {
-    @apply block lg:hidden;
-  }
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-@layer utilities {
-  .animate-blob {
-    animation: blob 7s infinite;
-  }
-
-  .animation-delay-2000 {
-    animation-delay: 2s;
-  }
-
-  .animation-delay-4000 {
-    animation-delay: 4s;
-  }
-
-  @keyframes blob {
-    0% {
-      transform: translate(0px, 0px) scale(1);
-    }
-    33% {
-      transform: translate(30px, -50px) scale(1.1);
-    }
-    66% {
-      transform: translate(-20px, 20px) scale(0.9);
-    }
-    100% {
-      transform: translate(0px, 0px) scale(1);
-    }
-  }
-
-  /* Responsive utilities */
-  .sidebar-width-expanded {
-    width: 16rem; /* 256px */
-  }
-
-  .sidebar-width-collapsed {
-    width: 4rem; /* 64px */
-  }
-
-  @media (max-width: 1023px) {
-    .sidebar-width-expanded,
-    .sidebar-width-collapsed {
-      width: 16rem;
-    }
-  }
-
-  /* Mobile-specific utilities */
-  .touch-target {
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  .safe-area-inset {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-
-  /* Responsive typography */
-  .text-scale-xs {
-    font-size: clamp(0.75rem, 2vw, 0.875rem);
-  }
-
-  .text-scale-sm {
-    font-size: clamp(0.875rem, 2.5vw, 1rem);
-  }
-
-  .text-scale-base {
-    font-size: clamp(1rem, 3vw, 1.125rem);
-  }
-
-  .text-scale-lg {
-    font-size: clamp(1.125rem, 3.5vw, 1.25rem);
-  }
-
-  .text-scale-xl {
-    font-size: clamp(1.25rem, 4vw, 1.5rem);
-  }
-
-  .text-scale-2xl {
-    font-size: clamp(1.5rem, 5vw, 2rem);
-  }
-
-  .text-scale-3xl {
-    font-size: clamp(2rem, 6vw, 3rem);
-  }
+#root {
+  height: 100%;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+/* Improve touch targets on mobile */
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* Prevent horizontal scroll on mobile */
+html,
+body {
+  overflow-x: hidden;
+}
+
+/* Portal root for notifications */
+#portal-root {
+  position: relative;
+  z-index: 9999;
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Focus styles for accessibility */
+*:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Remove focus outline for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Keep focus outline for keyboard users */
+*:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }

@@ -1,4 +1,20 @@
 import React from 'react';
+import {
+  Box,
+  Pagination as MUIPagination,
+  PaginationItem,
+  Typography,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  useTheme,
+  useMediaQuery,
+} from '@mui/material';
+import {
+  KeyboardArrowLeft,
+  KeyboardArrowRight,
+} from '@mui/icons-material';
 
 const Pagination = ({ 
   currentPage, 
@@ -11,6 +27,9 @@ const Pagination = ({
   onPageSizeChange,
   pageSizeOptions = [4, 10, 50, 100]
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
@@ -26,155 +45,122 @@ const Pagination = ({
     endItem
   });
 
-  const getPageNumbers = () => {
-    const pages = [];
-    const maxVisiblePages = window.innerWidth < 640 ? 3 : 5; // Fewer pages on mobile
-    
-    if (totalPages <= maxVisiblePages) {
-      // Show all pages if total is small
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      // Show pages around current page
-      let start = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-      let end = Math.min(totalPages, start + maxVisiblePages - 1);
-      
-      // Adjust start if we're near the end
-      if (end - start < maxVisiblePages - 1) {
-        start = Math.max(1, end - maxVisiblePages + 1);
-      }
-      
-      for (let i = start; i <= end; i++) {
-        pages.push(i);
-      }
-    }
-    
-    return pages;
-  };
-
   // Always show pagination if there are items, even if only one page
   if (totalItems === 0) {
     return null;
   }
 
+  const handlePageChange = (event, page) => {
+    onPageChange(page);
+  };
+
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6 gap-4">
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: { xs: 'column', sm: 'row' },
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        px: { xs: 2, sm: 3 },
+        py: 2,
+        bgcolor: 'background.paper',
+        borderTop: 1,
+        borderColor: 'divider',
+        gap: 2,
+      }}
+    >
       {/* Mobile pagination */}
-      <div className="flex justify-between w-full sm:hidden">
-        <button
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={!hasPrevious}
-          className={`relative inline-flex items-center px-4 py-2 text-responsive-sm font-medium rounded-md touch-target ${
-            hasPrevious
-              ? 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300'
-          }`}
-        >
-          Previous
-        </button>
-        <div className="flex items-center space-x-2">
-          <span className="text-responsive-sm text-gray-700">
-            Page {currentPage} of {totalPages}
-          </span>
-        </div>
-        <button
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={!hasNext}
-          className={`relative inline-flex items-center px-4 py-2 text-responsive-sm font-medium rounded-md touch-target ${
-            hasNext
-              ? 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300'
-          }`}
-        >
-          Next
-        </button>
-      </div>
+      <Box
+        sx={{
+          display: { xs: 'flex', sm: 'none' },
+          justifyContent: 'space-between',
+          width: '100%',
+        }}
+      >
+        <MUIPagination
+          count={totalPages}
+          page={currentPage}
+          onChange={handlePageChange}
+          size="small"
+          showFirstButton
+          showLastButton
+          renderItem={(item) => (
+            <PaginationItem
+              {...item}
+              slots={{
+                previous: KeyboardArrowLeft,
+                next: KeyboardArrowRight,
+              }}
+            />
+          )}
+        />
+      </Box>
       
       {/* Desktop pagination */}
-      <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-          <div>
-            <p className="text-responsive-sm text-gray-700">
-              Showing <span className="font-medium">{startItem}</span> to{' '}
-              <span className="font-medium">{endItem}</span> of{' '}
-              <span className="font-medium">{totalItems}</span> results
-            </p>
-          </div>
+      <Box
+        sx={{
+          display: { xs: 'none', sm: 'flex' },
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            gap: { xs: 1, sm: 3 },
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            Showing <strong>{startItem}</strong> to{' '}
+            <strong>{endItem}</strong> of{' '}
+            <strong>{totalItems}</strong> results
+          </Typography>
           
           {/* Page Size Selector */}
-          <div className="flex items-center space-x-2">
-            <label htmlFor="page-size" className="text-responsive-sm text-gray-700">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body2" color="text.secondary">
               Show:
-            </label>
-            <select
-              id="page-size"
-              value={itemsPerPage}
-              onChange={(e) => onPageSizeChange(parseInt(e.target.value))}
-              className="border border-gray-300 rounded-md px-2 py-1 text-responsive-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 touch-target"
-            >
-              {pageSizeOptions.map(size => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-            <span className="text-responsive-sm text-gray-700">per page</span>
-          </div>
-        </div>
-        
-        <div>
-          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-            {/* Previous button */}
-            <button
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={!hasPrevious}
-              className={`relative inline-flex items-center px-2 py-2 rounded-l-md border text-responsive-sm font-medium touch-target ${
-                hasPrevious
-                  ? 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                  : 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              <span className="sr-only">Previous</span>
-              <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-            </button>
-
-            {/* Page numbers */}
-            {getPageNumbers().map((page) => (
-              <button
-                key={page}
-                onClick={() => onPageChange(page)}
-                className={`relative inline-flex items-center px-3 sm:px-4 py-2 border text-responsive-sm font-medium touch-target ${
-                  page === currentPage
-                    ? 'z-10 bg-primary-50 border-primary-500 text-primary-600'
-                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                }`}
+            </Typography>
+            <FormControl size="small" sx={{ minWidth: 80 }}>
+              <Select
+                value={itemsPerPage}
+                onChange={(e) => onPageSizeChange(e.target.value)}
+                sx={{ height: 32 }}
               >
-                {page}
-              </button>
-            ))}
-
-            {/* Next button */}
-            <button
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={!hasNext}
-              className={`relative inline-flex items-center px-2 py-2 rounded-r-md border text-responsive-sm font-medium touch-target ${
-                hasNext
-                  ? 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                  : 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              <span className="sr-only">Next</span>
-              <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-              </svg>
-            </button>
-          </nav>
-        </div>
-      </div>
-    </div>
+                {pageSizeOptions.map(size => (
+                  <MenuItem key={size} value={size}>
+                    {size}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Typography variant="body2" color="text.secondary">
+              per page
+            </Typography>
+          </Box>
+        </Box>
+        
+        <MUIPagination
+          count={totalPages}
+          page={currentPage}
+          onChange={handlePageChange}
+          showFirstButton
+          showLastButton
+          renderItem={(item) => (
+            <PaginationItem
+              {...item}
+              slots={{
+                previous: KeyboardArrowLeft,
+                next: KeyboardArrowRight,
+              }}
+            />
+          )}
+        />
+      </Box>
+    </Box>
   );
 };
 

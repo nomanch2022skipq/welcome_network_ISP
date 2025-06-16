@@ -15,7 +15,31 @@ import {
   Legend,
   BarElement,
 } from 'chart.js';
-import { Box, Card, CardContent, Typography, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  FormControl,
+  Select,
+  MenuItem,
+  Button,
+  ButtonGroup,
+  Chip,
+  CircularProgress,
+  Grid,
+  Avatar,
+  useTheme,
+  useMediaQuery,
+} from '@mui/material';
+import {
+  Payment,
+  People,
+  AttachMoney,
+  TrendingUp,
+  Person,
+  Activity,
+} from '@mui/icons-material';
 
 ChartJS.register(
   CategoryScale,
@@ -31,6 +55,8 @@ ChartJS.register(
 
 const Dashboard = () => {
   const { user, isAdmin } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [stats, setStats] = useState({
     totalPayments: 0,
     totalAmount: 0,
@@ -242,8 +268,8 @@ const Dashboard = () => {
       {
         label: 'Total Payments',
         data: stats.totalAmounts,
-        borderColor: 'rgb(96, 165, 250)',
-        backgroundColor: 'rgb(96, 165, 250)',
+        borderColor: theme.palette.primary.main,
+        backgroundColor: theme.palette.primary.main,
       },
     ],
   };
@@ -300,7 +326,7 @@ const Dashboard = () => {
         },
         grid: {
           borderDash: [5, 5],
-          color: '#e5e7eb',
+          color: theme.palette.divider,
         },
       },
     },
@@ -330,20 +356,17 @@ const Dashboard = () => {
 
   // Helper function to get color for username
   const getColorForUsername = (username) => {
-    // Return a default color if username is not provided
     if (!username) {
-      return 'bg-gray-100 text-gray-800'; // A neutral color
+      return 'default';
     }
 
     const colors = [
-      'bg-blue-100 text-blue-800',
-      'bg-green-100 text-green-800',
-      'bg-purple-100 text-purple-800',
-      'bg-pink-100 text-pink-800',
-      'bg-yellow-100 text-yellow-800',
-      'bg-red-100 text-red-800',
-      'bg-indigo-100 text-indigo-800',
-      'bg-teal-100 text-teal-800',
+      'primary',
+      'secondary',
+      'success',
+      'warning',
+      'error',
+      'info',
     ];
     const index = username.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
     return colors[index];
@@ -351,144 +374,308 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        minHeight="100vh"
+      >
+        <CircularProgress />
+      </Box>
     );
   }
 
   return (
-    <div className="container-responsive">
+    <Box sx={{ maxWidth: 1280, mx: 'auto', px: { xs: 2, sm: 3, lg: 4 } }}>
       {/* Header */}
-      <div className="flex-responsive justify-between items-start sm:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-responsive-3xl font-extrabold text-gray-900">Dashboard</h1>
-          <p className="text-responsive-base text-gray-600 mt-1">Welcome back, {user?.username}!</p>
-        </div>
-        <div className="text-right">
-          <p className="text-responsive-sm text-gray-500">Role: <span className="font-semibold text-primary-700">{isAdmin() ? 'Administrator' : 'Employee'}</span></p>
-        </div>
-      </div>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          mb: 3,
+          gap: 2,
+        }}
+      >
+        <Box>
+          <Typography
+            variant="h3"
+            component="h1"
+            sx={{
+              fontWeight: 700,
+              fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+            }}
+          >
+            Dashboard
+          </Typography>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ mt: 0.5, fontSize: { xs: '0.875rem', sm: '1rem' } }}
+          >
+            Welcome back, {user?.username}!
+          </Typography>
+        </Box>
+        <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+          >
+            Role:{' '}
+            <Typography
+              component="span"
+              sx={{
+                fontWeight: 600,
+                color: 'primary.main',
+                fontSize: { xs: '0.875rem', sm: '1rem' },
+              }}
+            >
+              {isAdmin() ? 'Administrator' : 'Employee'}
+            </Typography>
+          </Typography>
+        </Box>
+      </Box>
 
       {/* Stats Cards */}
-      <div className="stats-grid mb-6">
-        <div className="card bg-gradient-to-br from-green-500 to-green-600 text-white p-4 sm:p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
-          <div className="flex items-center space-x-3 sm:space-x-4">
-            <div className="p-3 sm:p-4 rounded-full bg-white bg-opacity-20">
-              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-responsive-sm opacity-80">Total Amount</p>
-              <p className="text-responsive-2xl sm:text-3xl font-bold mt-1">{formatLargeNumber(stats.totalAmount)}</p>
-            </div>
-          </div>
-        </div>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 3, mb: 3 }}>
+        <Card
+          sx={{
+            flex: '1 1 calc(25% - 24px)', // Approx 25% width minus gap
+            minWidth: { xs: '100%', sm: 'calc(50% - 12px)', lg: 'calc(25% - 24px)' },
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            color: 'white',
+            p: { xs: 2, sm: 3 },
+            borderRadius: 3,
+            boxShadow: 3,
+            transition: 'transform 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.02)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar
+              sx={{
+                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                p: 1,
+              }}
+            >
+              <AttachMoney />
+            </Avatar>
+            <Box>
+              <Typography
+                variant="body2"
+                sx={{ opacity: 0.8, fontSize: { xs: '0.875rem', sm: '1rem' } }}
+              >
+                Total Amount
+              </Typography>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 700,
+                  fontSize: { xs: '1.5rem', sm: '2rem' },
+                  mt: 0.5,
+                }}
+              >
+                {formatLargeNumber(stats.totalAmount)}
+              </Typography>
+            </Box>
+          </Box>
+        </Card>
 
-        {/* New User Stats Cards */}
         {isAdmin() && (
-          <div className="card bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-4 sm:p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="p-3 sm:p-4 rounded-full bg-white bg-opacity-20">
-                <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-responsive-sm opacity-80">Total Users</p>
-                <p className="text-responsive-2xl sm:text-3xl font-bold mt-1">{stats.totalUsers}</p>
-              </div>
-            </div>
-          </div>
+          <Card
+            sx={{
+              flex: '1 1 calc(25% - 24px)', // Approx 25% width minus gap
+              minWidth: { xs: '100%', sm: 'calc(50% - 12px)', lg: 'calc(25% - 24px)' },
+              background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+              color: 'white',
+              p: { xs: 2, sm: 3 },
+              borderRadius: 3,
+              boxShadow: 3,
+              transition: 'transform 0.3s ease-in-out',
+              '&:hover': {
+                transform: 'scale(1.02)',
+              },
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar
+                sx={{
+                  bgcolor: 'rgba(255, 255, 255, 0.2)',
+                  p: 1,
+                }}
+              >
+                <Person />
+              </Avatar>
+              <Box>
+                <Typography
+                  variant="body2"
+                  sx={{ opacity: 0.8, fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                >
+                  Total Users
+                </Typography>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: { xs: '1.5rem', sm: '2rem' },
+                    mt: 0.5,
+                  }}
+                >
+                  {stats.totalUsers}
+                </Typography>
+              </Box>
+            </Box>
+          </Card>
         )}
 
-        <div className="card bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 sm:p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
-          <div className="flex items-center space-x-3 sm:space-x-4">
-            <div className="p-3 sm:p-4 rounded-full bg-white bg-opacity-20">
-              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-responsive-sm opacity-80">Total Payments</p>
-              <p className="text-responsive-2xl sm:text-3xl font-bold mt-1">{stats.totalPayments}</p>
-            </div>
-          </div>
-        </div>
+        <Card
+          sx={{
+            flex: '1 1 calc(25% - 24px)', // Approx 25% width minus gap
+            minWidth: { xs: '100%', sm: 'calc(50% - 12px)', lg: 'calc(25% - 24px)' },
+            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+            color: 'white',
+            p: { xs: 2, sm: 3 },
+            borderRadius: 3,
+            boxShadow: 3,
+            transition: 'transform 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.02)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar
+              sx={{
+                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                p: 1,
+              }}
+            >
+              <Payment />
+            </Avatar>
+            <Box>
+              <Typography
+                variant="body2"
+                sx={{ opacity: 0.8, fontSize: { xs: '0.875rem', sm: '1rem' } }}
+              >
+                Total Payments
+              </Typography>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 700,
+                  fontSize: { xs: '1.5rem', sm: '2rem' },
+                  mt: 0.5,
+                }}
+              >
+                {stats.totalPayments}
+              </Typography>
+            </Box>
+          </Box>
+        </Card>
 
-        <div className="card bg-gradient-to-br from-purple-500 to-purple-600 text-white p-4 sm:p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
-          <div className="flex items-center space-x-3 sm:space-x-4">
-            <div className="p-3 sm:p-4 rounded-full bg-white bg-opacity-20">
-              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-responsive-sm opacity-80">Total Customers</p>
-              <p className="text-responsive-2xl sm:text-3xl font-bold mt-1">{stats.totalCustomers}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+        <Card
+          sx={{
+            flex: '1 1 calc(25% - 24px)', // Approx 25% width minus gap
+            minWidth: { xs: '100%', sm: 'calc(50% - 12px)', lg: 'calc(25% - 24px)' },
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+            color: 'white',
+            p: { xs: 2, sm: 3 },
+            borderRadius: 3,
+            boxShadow: 3,
+            transition: 'transform 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.02)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar
+              sx={{
+                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                p: 1,
+              }}
+            >
+              <People />
+            </Avatar>
+            <Box>
+              <Typography
+                variant="body2"
+                sx={{ opacity: 0.8, fontSize: { xs: '0.875rem', sm: '1rem' } }}
+              >
+                Total Customers
+              </Typography>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 700,
+                  fontSize: { xs: '1.5rem', sm: '2rem' },
+                  mt: 0.5,
+                }}
+              >
+                {stats.totalCustomers}
+              </Typography>
+            </Box>
+          </Box>
+        </Card>
+      </Box>
 
       {/* Charts and Recent Payments */}
-      <div className="grid-responsive-2 gap-responsive mb-6">
-        <Card className="p-4 sm:p-6 rounded-xl shadow-lg">
-          <CardContent className="p-0 sm:p-2">
-            <Box display="flex" flexDirection="column" sx={{ gap: 2, mb: 2 }}>
-              {/* Title and controls */}
-              <Box display="flex" flexDirection="column" sx={{ gap: 1 }}>
-                <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                  Payments
-                </Typography>
-                
-                {/* Time Period buttons - responsive */}
-                <Box display="flex" flexWrap="wrap" sx={{ gap: 0.5, mt: 1 }}>
-                  <button
-                    onClick={() => setTimePeriod('daily')}
-                    className={`px-2 sm:px-3 py-1.5 rounded-md text-responsive-sm font-medium transition-colors touch-target ${
-                      timePeriod === 'daily' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
+      <Box sx={{
+        display: 'flex',
+        flexDirection: { xs: 'column', lg: 'row' }, // Stack vertically on small screens, side-by-side on large
+        gap: 3,
+        mb: 3,
+        width: '100%',
+      }}>
+        <Card sx={{ flex: 1, p: { xs: 2, sm: 3 }, borderRadius: 3, boxShadow: 2 }}>
+          <CardContent sx={{ p: 2, display: 'flex', flexDirection: 'column', height: { xs: 450, sm: 500, md: 550 }, boxSizing: 'border-box', overflow: 'hidden' }}>
+            <Box sx={{ height: { xs: 170, sm: 180, md: 190 } }}> {/* Fixed height for controls container */}
+              <Typography
+                variant="h6"
+                component="h3"
+                sx={{
+                  fontWeight: 700,
+                  fontSize: { xs: '1rem', sm: '1.25rem' },
+                  mb: 2,
+                }}
+              >
+                Payments
+              </Typography>
+              
+              {/* Time Period buttons */}
+              <ButtonGroup
+                variant="outlined"
+                size="small"
+                sx={{ flexWrap: 'wrap', mb: 2 }}
+              >
+                {['daily', 'weekly', 'monthly', 'yearly'].map((period) => (
+                  <Button
+                    key={period}
+                    onClick={() => setTimePeriod(period)}
+                    variant={timePeriod === period ? 'contained' : 'outlined'}
+                    sx={{ textTransform: 'capitalize' }}
                   >
-                    Daily
-                  </button>
-                  <button
-                    onClick={() => setTimePeriod('weekly')}
-                    className={`px-2 sm:px-3 py-1.5 rounded-md text-responsive-sm font-medium transition-colors touch-target ${
-                      timePeriod === 'weekly' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    Weekly
-                  </button>
-                  <button
-                    onClick={() => setTimePeriod('monthly')}
-                    className={`px-2 sm:px-3 py-1.5 rounded-md text-responsive-sm font-medium transition-colors touch-target ${
-                      timePeriod === 'monthly' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    Monthly
-                  </button>
-                  <button
-                    onClick={() => setTimePeriod('yearly')}
-                    className={`px-2 sm:px-3 py-1.5 rounded-md text-responsive-sm font-medium transition-colors touch-target ${
-                      timePeriod === 'yearly' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    Yearly
-                  </button>
-                </Box>
-              </Box>
+                    {period}
+                  </Button>
+                ))}
+              </ButtonGroup>
 
               {/* User dropdown only for admins */}
               {isAdmin() && (
-                <Box display="flex" flexDirection="column" sx={{ gap: 1, mt: 1 }}>
-                  <Typography variant="body2" component="label" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                <Box sx={{ mb: 2 }}>
+                  <Typography
+                    variant="body2"
+                    component="label"
+                    sx={{ fontSize: { xs: '0.875rem', sm: '1rem' }, mb: 1, display: 'block' }}
+                  >
                     User:
                   </Typography>
                   <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 120 } }}>
                     <Select
-                      id="user-select"
                       value={selectedUser}
                       onChange={(e) => setSelectedUser(e.target.value)}
                       displayEmpty
@@ -506,100 +693,235 @@ const Dashboard = () => {
             </Box>
 
             {/* The Chart itself */}
-            <Box sx={{ height: { xs: 250, sm: 280, md: 320 } }}>
+            <Box sx={{ flexGrow: 1, minHeight: 0, overflowY: 'auto' }}>
               <Bar data={chartData} options={chartOptions} />
             </Box>
           </CardContent>
         </Card>
 
-        <Card className="p-4 sm:p-6 rounded-xl shadow-lg">
-          <CardContent className="p-0 sm:p-2">
-            <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', mb: 2, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-              Recent Payments
-            </Typography>
-            <Box sx={{ minHeight: { xs: 250, sm: 280, md: 320 }, maxHeight: { xs: 250, sm: 280, md: 320 }, overflowY: 'auto' }}>
-              <div className="space-y-3 sm:space-y-4">
-                {stats.recentPayments.length > 0 ? (
-                  stats.recentPayments.map((payment) => (
-                    <div key={payment.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-100 animate-fade-in-up gap-2">
-                      <div className="flex-1">
-                        <Typography variant="subtitle2" sx={{ fontWeight: 'semibold', fontSize: { xs: '0.875rem', sm: '1rem' } }}>
-                          {payment.customer.name}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                          {payment.description || 'No description'}
-                        </Typography>
-                        {isAdmin() && payment.created_by && (
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                            Submitted by: <span className={`inline-flex items-center px-2 sm:px-4 py-1 rounded-full text-xs font-medium ${getColorForUsername(payment.created_by.username)}`}>
-                              {payment.created_by.username}
-                            </span>
+        <Card sx={{ flex: 1, p: { xs: 2, sm: 3 }, borderRadius: 3, boxShadow: 2 }}>
+          <CardContent sx={{ p: 2, display: 'flex', flexDirection: 'column', height: { xs: 450, sm: 500, md: 550 }, boxSizing: 'border-box', overflow: 'hidden' }}>
+            <Box sx={{ height: { xs: 170, sm: 180, md: 190 } }}> {/* Fixed height for spacer */}
+              <Typography
+                variant="h6"
+                component="h3"
+                sx={{
+                  fontWeight: 700,
+                  mb: 2,
+                  fontSize: { xs: '1rem', sm: '1.25rem' },
+                }}
+              >
+                Recent Payments
+              </Typography>
+            </Box>
+            
+            <Box
+              sx={{
+                flexGrow: 1, minHeight: 0,
+                overflowY: 'auto',
+              }}
+            >
+              {stats.recentPayments.length > 0 ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {stats.recentPayments.map((payment) => (
+                    <Card
+                      key={payment.id}
+                      variant="outlined"
+                      sx={{
+                        p: 2,
+                        bgcolor: 'grey.50',
+                        borderColor: 'grey.200',
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          flexDirection: { xs: 'column', sm: 'row' },
+                          justifyContent: 'space-between',
+                          alignItems: { xs: 'flex-start', sm: 'center' },
+                          gap: 1,
+                        }}
+                      >
+                        <Box sx={{ flex: 1 }}>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{
+                              fontWeight: 600,
+                              fontSize: { xs: '0.875rem', sm: '1rem' },
+                            }}
+                          >
+                            {payment.customer.name}
                           </Typography>
-                        )}
-                      </div>
-                      <div className="text-right sm:text-right">
-                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: 'success.main', fontSize: { xs: '0.875rem', sm: '1rem' } }}>
-                          {formatAmount(payment.amount)}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                          {new Date(payment.date).toLocaleDateString()}
-                        </Typography>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
-                    <Typography sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
-                      No recent payments to display.
-                    </Typography>
-                  </Box>
-                )}
-              </div>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                          >
+                            {payment.description || 'No description'}
+                          </Typography>
+                          {isAdmin() && payment.created_by && (
+                            <Box sx={{ mt: 0.5 }}>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                              >
+                                Submitted by:{' '}
+                                <Chip
+                                  label={payment.created_by.username}
+                                  size="small"
+                                  color={getColorForUsername(payment.created_by.username)}
+                                  variant="outlined"
+                                />
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
+                        <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{
+                              fontWeight: 700,
+                              color: 'success.main',
+                              fontSize: { xs: '0.875rem', sm: '1rem' },
+                            }}
+                          >
+                            {formatAmount(payment.amount)}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                          >
+                            {new Date(payment.date).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Card>
+                  ))}
+                </Box>
+              ) : (
+                <Box
+                  sx={{
+                    textAlign: 'center',
+                    py: 8,
+                    color: 'text.secondary',
+                  }}
+                >
+                  <Typography sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                    No recent payments to display.
+                  </Typography>
+                </Box>
+              )}
             </Box>
           </CardContent>
         </Card>
+      </Box>
 
-        <Card className="p-4 sm:p-6 rounded-xl shadow-lg">
-          <CardContent className="p-0 sm:p-2">
-            <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', mb: 2, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-              Recent Activities
-            </Typography>
-            <Box sx={{ minHeight: { xs: 250, sm: 280, md: 320 }, maxHeight: { xs: 250, sm: 280, md: 320 }, overflowY: 'auto' }}>
-              <div className="space-y-3 sm:space-y-4">
+      {/* Recent Activities Section */}
+      <Grid container spacing={3} sx={{ mb: 3, width: '100%' }}>
+        <Grid item xs={12} lg={6}>
+          <Card sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, boxShadow: 2 }}>
+            <CardContent sx={{ p: 2, display: 'flex', flexDirection: 'column', height: { xs: 450, sm: 500, md: 550 }, boxSizing: 'border-box', overflow: 'hidden' }}>
+              <Box sx={{ height: { xs: 170, sm: 180, md: 190 } }}> {/* Fixed height for title container */}
+                <Typography
+                  variant="h6"
+                  component="h3"
+                  sx={{
+                    fontWeight: 700,
+                    mb: 2,
+                    fontSize: { xs: '1rem', sm: '1.25rem' },
+                  }}
+                >
+                  Recent Activities
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  flexGrow: 1, minHeight: 0,
+                  overflowY: 'auto',
+                }}
+              >
                 {stats.logs.length > 0 ? (
-                  stats.logs.map((log) => (
-                    <div key={log.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-100 animate-fade-in-up gap-2">
-                      <div className="flex-1">
-                        <Typography variant="body2" sx={{ fontWeight: 'semibold', fontSize: { xs: '0.875rem', sm: '1rem' } }}>
-                          {log.description}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                          {new Date(log.created_at).toLocaleString()}
-                        </Typography>
-                        {log.user_username && (
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                            By: <span className={`inline-flex items-center px-2 sm:px-4 py-1 rounded-full text-xs font-medium ${getColorForUsername(log.user_username)}`}>
-                              {log.user_username}
-                            </span>
-                          </Typography>
-                        )}
-                      </div>
-                    </div>
-                  ))
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {stats.logs.map((log) => (
+                      <Card
+                        key={log.id}
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          bgcolor: 'grey.50',
+                          borderColor: 'grey.200',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            flexDirection: { xs: 'column', sm: 'row' },
+                            justifyContent: 'space-between',
+                            alignItems: { xs: 'flex-start', sm: 'center' },
+                            gap: 1,
+                          }}
+                        >
+                          <Box sx={{ flex: 1 }}>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontWeight: 600,
+                                fontSize: { xs: '0.875rem', sm: '1rem' },
+                              }}
+                            >
+                              {log.description}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                            >
+                              {new Date(log.created_at).toLocaleString()}
+                            </Typography>
+                            {log.user_username && (
+                              <Box sx={{ mt: 0.5 }}>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                                >
+                                  By:{' '}
+                                  <Chip
+                                    label={log.user_username}
+                                    size="small"
+                                    color={getColorForUsername(log.user_username)}
+                                    variant="outlined"
+                                  />
+                                </Typography>
+                              </Box>
+                            )}
+                          </Box>
+                        </Box>
+                      </Card>
+                    ))}
+                  </Box>
                 ) : (
-                  <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
+                  <Box
+                    sx={{
+                      textAlign: 'center',
+                      py: 8,
+                      color: 'text.secondary',
+                    }}
+                  >
                     <Typography sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
                       No recent activities to display.
                     </Typography>
                   </Box>
                 )}
-              </div>
-            </Box>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    </Box>
   );
 };
 
-export default Dashboard;
+export default Dashboard; 

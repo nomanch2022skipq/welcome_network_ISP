@@ -1,13 +1,54 @@
-import React, { useState, useEffect, useRef } from 'react';
-import ReactDOM from 'react-dom';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { customerService, paymentService } from '../services/api';
 import Pagination from '../components/Pagination';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  TextField,
+  IconButton,
+  Menu,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  Avatar,
+  Grid,
+  CircularProgress,
+  useTheme,
+  useMediaQuery,
+} from '@mui/material';
+import {
+  Add,
+  Search,
+  Clear,
+  MoreVert,
+  Payment,
+  Edit,
+  Delete,
+  People,
+  CheckCircle,
+  Cancel,
+} from '@mui/icons-material';
 
 const CustomerManagement = () => {
   const { user, isAdmin } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -15,6 +56,8 @@ const CustomerManagement = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedCustomerForMenu, setSelectedCustomerForMenu] = useState(null);
   const [newCustomer, setNewCustomer] = useState({
     name: '',
     email: '',
@@ -26,9 +69,6 @@ const CustomerManagement = () => {
     amount: '',
     description: '',
   });
-  const [activeMenuId, setActiveMenuId] = useState(null); // State to track which menu is open
-  const menuButtonRefs = useRef({}); // Ref to store individual menu button elements
-  const menuPosition = useRef({ top: 0, left: 0 }); // To store menu position
 
   const { showSuccess, showError } = useNotification();
 
@@ -51,29 +91,11 @@ const CustomerManagement = () => {
     fetchCustomers();
   }, [searchTerm, pagination.currentPage, pagination.itemsPerPage], 30000);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      // Check if the click is outside any active menu and not on a menu button
-      const clickedOutsideMenu = activeMenuId && !event.target.closest('.menu-dropdown-content');
-      const clickedOnDifferentButton = activeMenuId && menuButtonRefs.current[activeMenuId] && !menuButtonRefs.current[activeMenuId].contains(event.target);
-
-      if (clickedOutsideMenu && clickedOnDifferentButton) {
-        setActiveMenuId(null);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [activeMenuId]);
-
   const fetchCustomers = async () => {
     try {
       setLoading(true);
       const params = {
-        page: pagination.currentPage,
-        page_size: pagination.itemsPerPage
+        page_size: 9999 // Fetch all customers for inspection
       };
       if (searchTerm) {
         params.search = searchTerm;
@@ -83,6 +105,7 @@ const CustomerManagement = () => {
       // Handle paginated response
       if (response.results) {
         setCustomers(response.results);
+        console.log('Customer Management - Fetched Customers Data (all):', response.results);
         setPagination(prev => ({
           ...prev,
           currentPage: response.current_page || 1,
@@ -95,6 +118,7 @@ const CustomerManagement = () => {
       } else {
         // Fallback for non-paginated response
         setCustomers(response);
+        console.log('Customer Management - Fetched Customers Data (all) (non-paginated):', response);
         setPagination(prev => ({
           ...prev,
           totalItems: response.length || 0,
@@ -172,7 +196,7 @@ const CustomerManagement = () => {
   const openEditModal = (customer) => {
     setSelectedCustomer({ ...customer });
     setShowEditModal(true);
-    setActiveMenuId(null); // Close menu after selecting edit
+    setAnchorEl(null);
   };
 
   const openPaymentModal = (customer) => {
@@ -182,7 +206,7 @@ const CustomerManagement = () => {
       description: '',
     });
     setShowPaymentModal(true);
-    setActiveMenuId(null); // Close menu after selecting add payment
+    setAnchorEl(null);
   };
 
   const handleAddPayment = async (e) => {
@@ -215,18 +239,14 @@ const CustomerManagement = () => {
     }).format(amount);
   };
 
-  const toggleMenu = (customerId, buttonElement) => {
-    if (activeMenuId === customerId) {
-      setActiveMenuId(null);
-    } else {
-      // Calculate position of the button to place the menu
-      const rect = buttonElement.getBoundingClientRect();
-      menuPosition.current = {
-        top: rect.top + window.scrollY + rect.height, // Position below button
-        left: rect.right + window.scrollX - 200, // Align right side of menu with right side of button, shifted left for clearance
-      };
-      setActiveMenuId(customerId);
-    }
+  const handleMenuOpen = (event, customer) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedCustomerForMenu(customer);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedCustomerForMenu(null);
   };
 
   const formatDate = (dateString) => {
@@ -241,569 +261,476 @@ const CustomerManagement = () => {
   const inactiveCustomers = customers.filter(customer => !customer.is_active);
 
   return (
-    <div className="container-responsive">
+    <Box sx={{ maxWidth: 1280, mx: 'auto', px: { xs: 2, sm: 3, lg: 4 } }}>
       {/* Header */}
-      <div className="flex-responsive justify-between items-start sm:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-responsive-3xl font-extrabold text-gray-900">Customer Management</h1>
-          <p className="text-responsive-base text-gray-600 mt-1">Manage customer information and payments</p>
-        </div>
-        <div className="action-buttons">
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="action-button btn-primary"
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          mb: 3,
+          gap: 2,
+        }}
+      >
+        <Box>
+          <Typography
+            variant="h3"
+            component="h1"
+            sx={{
+              fontWeight: 700,
+              fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+            }}
           >
-            Add Customer
-          </button>
-        </div>
-      </div>
+            Customer Management
+          </Typography>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ mt: 0.5, fontSize: { xs: '0.875rem', sm: '1rem' } }}
+          >
+            Manage customer information and payments
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => setShowAddModal(true)}
+          sx={{ minWidth: { xs: '100%', sm: 'auto' } }}
+        >
+          Add Customer
+        </Button>
+      </Box>
 
       {/* Search */}
-      <div className="card mb-6">
-        <div className="flex-responsive items-center gap-4">
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Search customers by name, email, or phone..."
-              className="input-field"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <button
+      <Card sx={{ mb: 3, p: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, alignItems: 'center' }}>
+          <TextField
+            fullWidth
+            placeholder="Search customers by name, email, or phone..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            size="small"
+          />
+          <Button
+            variant="outlined"
             onClick={() => setSearchTerm('')}
-            className="btn-secondary touch-target"
+            startIcon={<Clear />}
+            sx={{ minWidth: { xs: '100%', sm: 'auto' } }}
           >
             Clear
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Box>
+      </Card>
 
       {/* Summary Cards */}
-      <div className="stats-grid mb-6">
-        <div className="card bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-          <div className="flex items-center">
-            <div className="p-3 rounded-full bg-white bg-opacity-20">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1-283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-responsive-sm opacity-75">Total Customers</p>
-              <p className="text-responsive-2xl font-bold">{pagination.totalItems}</p>
-            </div>
-          </div>
-        </div>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' }, // Stack on small screens, row on larger
+          gap: 3, // Spacing between cards
+          mb: 3,
+        }}
+      >
+        <Card
+          sx={{
+            flex: 1, // Distribute available space equally
+            minWidth: { xs: '100%', sm: 'auto' }, // Ensure full width on extra-small screens
+            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+            color: 'white',
+            p: 3,
+            borderRadius: 3,
+            boxShadow: 3,
+            transition: 'transform 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.02)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', mr: 2 }}>
+              <People />
+            </Avatar>
+            <Box>
+              <Typography variant="body2" sx={{ opacity: 0.75 }}>
+                Total Customers
+              </Typography>
+              <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                {pagination.totalItems}
+              </Typography>
+            </Box>
+          </Box>
+        </Card>
 
-        <div className="card bg-gradient-to-r from-green-500 to-green-600 text-white">
-          <div className="flex items-center">
-            <div className="p-3 rounded-full bg-white bg-opacity-20">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-responsive-sm opacity-75">Active Customers</p>
-              <p className="text-responsive-2xl font-bold">{activeCustomers.length}</p>
-            </div>
-          </div>
-        </div>
+        <Card
+          sx={{
+            flex: 1, // Distribute available space equally
+            minWidth: { xs: '100%', sm: 'auto' }, // Ensure full width on extra-small screens
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            color: 'white',
+            p: 3,
+            borderRadius: 3,
+            boxShadow: 3,
+            transition: 'transform 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.02)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', mr: 2 }}>
+              <CheckCircle />
+            </Avatar>
+            <Box>
+              <Typography variant="body2" sx={{ opacity: 0.75 }}>
+                Active Customers
+              </Typography>
+              <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                {activeCustomers.length}
+              </Typography>
+            </Box>
+          </Box>
+        </Card>
 
-        <div className="card bg-gradient-to-r from-red-500 to-red-600 text-white">
-          <div className="flex items-center">
-            <div className="p-3 rounded-full bg-white bg-opacity-20">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-responsive-sm opacity-75">Inactive Customers</p>
-              <p className="text-responsive-2xl font-bold">{inactiveCustomers.length}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+        <Card
+          sx={{
+            flex: 1, // Distribute available space equally
+            minWidth: { xs: '100%', sm: 'auto' }, // Ensure full width on extra-small screens
+            background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+            color: 'white',
+            p: 3,
+            borderRadius: 3,
+            boxShadow: 3,
+            transition: 'transform 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.02)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', mr: 2 }}>
+              <Cancel />
+            </Avatar>
+            <Box>
+              <Typography variant="body2" sx={{ opacity: 0.75 }}>
+                Inactive Customers
+              </Typography>
+              <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                {inactiveCustomers.length}
+              </Typography>
+            </Box>
+          </Box>
+        </Card>
+      </Box>
 
       {/* Customers Table */}
-      <div className="card mb-6">
-        <h3 className="text-responsive-lg font-semibold mb-4">Customer Records</h3>
-        
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-          </div>
-        ) : (
-          <>
-            {/* Mobile Card View */}
-            <div className="block sm:hidden space-y-4">
-              {customers.map((customer) => (
-                <div key={customer.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                        <span className="text-primary-600 font-medium text-sm">
-                          {customer.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {customer.name}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {customer.email}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {customer.phone || 'N/A'}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="relative">
-                      <button
-                        ref={el => menuButtonRefs.current[customer.id] = el}
-                        type="button"
-                        className="flex items-center justify-center p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 touch-target"
-                        onClick={(e) => toggleMenu(customer.id, e.currentTarget)}
-                        aria-expanded={activeMenuId === customer.id ? 'true' : 'false'}
-                        aria-haspopup="true"
-                      >
-                        <span className="material-icons text-xl">more_vert</span>
-                      </button>
-
-                      {activeMenuId === customer.id && ReactDOM.createPortal(
-                        <div
-                          className="menu-dropdown-content origin-top-right absolute right-0 mt-2 rounded-md shadow-lg bg-white border-0 focus:outline-none z-50 min-w-[140px]"
-                          role="menu"
-                          aria-orientation="vertical"
-                          aria-labelledby={`options-menu-${customer.id}`}
-                        >
-                          <div className="py-1">
-                            <button
-                              onClick={() => openEditModal(customer)}
-                              className="group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left touch-target"
-                              role="menuitem"
-                            >
-                              <span className="material-icons mr-3 text-lg group-hover:text-indigo-600">edit</span>
-                              Edit
-                            </button>
-                          </div>
-                          <div className="py-1">
-                            <button
-                              onClick={() => openPaymentModal(customer)}
-                              className="group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left touch-target"
-                              role="menuitem"
-                            >
-                              <span className="material-icons mr-3 text-lg group-hover:text-green-600">payment</span>
-                              Add Payment
-                            </button>
-                          </div>
-                          <div className="py-1">
-                            <button
-                              onClick={() => handleDeleteCustomer(customer.id)}
-                              className="group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left touch-target"
-                              role="menuitem"
-                            >
-                              <span className="material-icons mr-3 text-lg group-hover:text-red-600">delete</span>
-                              Delete
-                            </button>
-                          </div>
-                        </div>,
-                        document.getElementById('portal-root')
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 mb-3">
-                    <div>
-                      <span className="text-xs text-gray-500 uppercase tracking-wider">Package Fee</span>
-                      <div className="mt-1 text-sm font-medium text-gray-900">
-                        {formatAmount(customer.package_fee)}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs text-gray-500 uppercase tracking-wider">Status</span>
-                      <div className="mt-1">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          customer.is_active 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {customer.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="border-t pt-3">
-                    <div className="grid grid-cols-2 gap-4 text-xs text-gray-500">
-                      <div>
-                        <span className="block">Created:</span>
-                        <span className="font-medium">{formatDate(customer.created_at)}</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="block">By:  
-                        <span className='pl-1'>
-                          {customer.created_by_username ? customer.created_by : 'System'}
-                          </span>
-                        </span>
-                      </div>
-                    </div>
-                    {customer.address && (
-                      <div className="mt-2 text-xs text-gray-500">
-                        <span className="block">Address:</span>
-                        <span className="font-medium">{customer.address}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Desktop Table View */}
-            <div className="hidden sm:block table-responsive">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Contact Info
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Package Fee
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created By
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {customers.map((customer) => (
-                    <tr key={customer.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                            <span className="text-primary-600 font-medium text-sm">
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" component="h3" sx={{ mb: 2, fontWeight: 600 }}>
+            Customer Records
+          </Typography>
+          
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <>
+              {/* Desktop Table View */}
+              <TableContainer component={Paper} sx={{ display: { xs: 'none', md: 'block' } }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Customer</TableCell>
+                      <TableCell>Contact</TableCell>
+                      <TableCell>Package Fee</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Created</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {customers.map((customer) => (
+                      <TableRow key={customer.id}>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Avatar sx={{ bgcolor: 'primary.main' }}>
                               {customer.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{customer.name}</div>
-                            <div className="text-sm text-gray-500">{customer.email}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{customer.phone || 'N/A'}</div>
-                        <div className="text-sm text-gray-500 truncate max-w-[200px]">{customer.address || 'No address'}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{formatAmount(customer.package_fee)}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {customer.created_by ? customer.created_by.username : 'System'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          customer.is_active 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {customer.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(customer.created_at)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="relative flex justify-end items-center h-full">
-                          <button
-                            ref={el => menuButtonRefs.current[customer.id] = el}
-                            type="button"
-                            className="flex items-center justify-center p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 touch-target"
-                            onClick={(e) => toggleMenu(customer.id, e.currentTarget)}
-                            aria-expanded={activeMenuId === customer.id ? 'true' : 'false'}
-                            aria-haspopup="true"
+                            </Avatar>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {customer.name}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{customer.email}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {customer.phone || 'N/A'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {formatAmount(customer.package_fee)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={customer.is_active ? 'Active' : 'Inactive'}
+                            color={customer.is_active ? 'success' : 'error'}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {formatDate(customer.created_at)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton
+                            onClick={(e) => handleMenuOpen(e, customer)}
+                            size="small"
                           >
-                            <span className="material-icons text-xl">more_vert</span>
-                          </button>
+                            <MoreVert />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
 
-                          {activeMenuId === customer.id && ReactDOM.createPortal(
-                            <div
-                              className="menu-dropdown-content origin-top-right absolute rounded-md shadow-lg bg-white border-0 focus:outline-none z-50"
-                              role="menu"
-                              aria-orientation="vertical"
-                              aria-labelledby={`options-menu-${customer.id}`}
-                              style={{ top: `${menuPosition.current.top}px`, left: `${menuPosition.current.left}px` }}
-                            >
-                              <div className="py-1">
-                                <button
-                                  onClick={() => openEditModal(customer)}
-                                  className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left touch-target"
-                                  role="menuitem"
-                                >
-                                  <span className="material-icons mr-3 text-lg group-hover:text-indigo-600">edit</span>
-                                  Edit
-                                </button>
-                              </div>
-                              <div className="py-1">
-                                <button
-                                  onClick={() => openPaymentModal(customer)}
-                                  className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left touch-target"
-                                  role="menuitem"
-                                >
-                                  <span className="material-icons mr-3 text-lg group-hover:text-green-600">payment</span>
-                                  Add Payment
-                                </button>
-                              </div>
-                              <div className="py-1">
-                                <button
-                                  onClick={() => handleDeleteCustomer(customer.id)}
-                                  className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left touch-target"
-                                  role="menuitem"
-                                >
-                                  <span className="material-icons mr-3 text-lg group-hover:text-red-600">delete</span>
-                                  Delete
-                                </button>
-                              </div>
-                            </div>,
-                            document.getElementById('portal-root')
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            
-            {customers.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No customers found</p>
-              </div>
-            )}
-            
-            {/* Pagination */}
-            <Pagination
-              currentPage={pagination.currentPage}
-              totalPages={pagination.totalPages}
-              hasNext={pagination.hasNext}
-              hasPrevious={pagination.hasPrevious}
-              onPageChange={handlePageChange}
-              onPageSizeChange={handlePageSizeChange}
-              totalItems={pagination.totalItems}
-              itemsPerPage={pagination.itemsPerPage}
-            />
-          </>
-        )}
-      </div>
+              {/* Mobile Card View */}
+              <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+                {customers.map((customer) => (
+                  <Card
+                    key={customer.id}
+                    variant="outlined"
+                    sx={{ mb: 2, p: 2 }}
+                  >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Avatar sx={{ bgcolor: 'primary.main' }}>
+                          {customer.name.charAt(0).toUpperCase()}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                            {customer.name}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {customer.email}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {customer.phone || 'N/A'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <IconButton
+                        onClick={(e) => handleMenuOpen(e, customer)}
+                        size="small"
+                      >
+                        <MoreVert />
+                      </IconButton>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {formatAmount(customer.package_fee)}
+                      </Typography>
+                      <Chip
+                        label={customer.is_active ? 'Active' : 'Inactive'}
+                        color={customer.is_active ? 'success' : 'error'}
+                        size="small"
+                      />
+                    </Box>
+                  </Card>
+                ))}
+              </Box>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={pagination.currentPage}
+        totalPages={pagination.totalPages}
+        hasNext={pagination.hasNext}
+        hasPrevious={pagination.hasPrevious}
+        onPageChange={handlePageChange}
+        totalItems={pagination.totalItems}
+        itemsPerPage={pagination.itemsPerPage}
+        onPageSizeChange={handlePageSizeChange}
+      />
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={() => {
+          openPaymentModal(selectedCustomerForMenu);
+          handleMenuClose();
+        }}>
+          <Payment sx={{ mr: 1 }} />
+          Add Payment
+        </MenuItem>
+        <MenuItem onClick={() => {
+          openEditModal(selectedCustomerForMenu);
+          handleMenuClose();
+        }}>
+          <Edit sx={{ mr: 1 }} />
+          Edit
+        </MenuItem>
+        <MenuItem onClick={() => {
+          handleDeleteCustomer(selectedCustomerForMenu?.id);
+          handleMenuClose();
+        }}>
+          <Delete sx={{ mr: 1 }} />
+          Delete
+        </MenuItem>
+      </Menu>
 
       {/* Add Customer Modal */}
-      {showAddModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="mt-3">
-              <h3 className="text-responsive-lg font-medium text-gray-900 mb-4">Add New Customer</h3>
-              <form onSubmit={handleAddCustomer} className="space-y-4">
-                <div className="form-grid">
-                  <div>
-                    <label className="block text-responsive-sm font-medium text-gray-700">Name</label>
-                    <input
-                      type="text"
-                      required
-                      className="input-field touch-target"
-                      value={newCustomer.name}
-                      onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-responsive-sm font-medium text-gray-700">Email</label>
-                    <input
-                      type="email"
-                      required
-                      className="input-field touch-target"
-                      value={newCustomer.email}
-                      onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-responsive-sm font-medium text-gray-700">Phone</label>
-                    <input
-                      type="text"
-                      className="input-field touch-target"
-                      value={newCustomer.phone}
-                      onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-responsive-sm font-medium text-gray-700">Package Fee</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="input-field touch-target"
-                      value={newCustomer.package_fee}
-                      onChange={(e) => setNewCustomer({...newCustomer, package_fee: e.target.value})}
-                    />
-                  </div>
-                  <div className="form-full-width">
-                    <label className="block text-responsive-sm font-medium text-gray-700">Address</label>
-                    <textarea
-                      className="input-field touch-target"
-                      rows="3"
-                      value={newCustomer.address}
-                      onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
-                    />
-                  </div>
-                </div>
-                <div className="action-buttons">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddModal(false)}
-                    className="action-button btn-secondary"
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="action-button btn-primary">
-                    Add Customer
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog open={showAddModal} onClose={() => setShowAddModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add New Customer</DialogTitle>
+        <Box component="form" onSubmit={handleAddCustomer}>
+          <DialogContent>
+            <TextField
+              fullWidth
+              label="Name"
+              value={newCustomer.name}
+              onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Email"
+              type="email"
+              value={newCustomer.email}
+              onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Phone"
+              value={newCustomer.phone}
+              onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+              margin="normal"
+            />
+            <TextField
+              fullWidth
+              label="Address"
+              multiline
+              rows={3}
+              value={newCustomer.address}
+              onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
+              margin="normal"
+            />
+            <TextField
+              fullWidth
+              label="Package Fee"
+              type="number"
+              value={newCustomer.package_fee}
+              onChange={(e) => setNewCustomer({ ...newCustomer, package_fee: e.target.value })}
+              margin="normal"
+              required
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowAddModal(false)}>Cancel</Button>
+            <Button type="submit" variant="contained">Add Customer</Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
 
       {/* Edit Customer Modal */}
-      {showEditModal && selectedCustomer && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="mt-3">
-              <h3 className="text-responsive-lg font-medium text-gray-900 mb-4">Edit Customer</h3>
-              <form onSubmit={handleEditCustomer} className="space-y-4">
-                <div className="form-grid">
-                  <div>
-                    <label className="block text-responsive-sm font-medium text-gray-700">Name</label>
-                    <input
-                      type="text"
-                      required
-                      className="input-field touch-target"
-                      value={selectedCustomer.name}
-                      onChange={(e) => setSelectedCustomer({...selectedCustomer, name: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-responsive-sm font-medium text-gray-700">Email</label>
-                    <input
-                      type="email"
-                      required
-                      className="input-field touch-target"
-                      value={selectedCustomer.email}
-                      onChange={(e) => setSelectedCustomer({...selectedCustomer, email: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-responsive-sm font-medium text-gray-700">Phone</label>
-                    <input
-                      type="text"
-                      className="input-field touch-target"
-                      value={selectedCustomer.phone || ''}
-                      onChange={(e) => setSelectedCustomer({...selectedCustomer, phone: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-responsive-sm font-medium text-gray-700">Package Fee</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="input-field touch-target"
-                      value={selectedCustomer.package_fee || ''}
-                      onChange={(e) => setSelectedCustomer({...selectedCustomer, package_fee: e.target.value})}
-                    />
-                  </div>
-                  <div className="form-full-width">
-                    <label className="block text-responsive-sm font-medium text-gray-700">Address</label>
-                    <textarea
-                      className="input-field touch-target"
-                      rows="3"
-                      value={selectedCustomer.address || ''}
-                      onChange={(e) => setSelectedCustomer({...selectedCustomer, address: e.target.value})}
-                    />
-                  </div>
-                </div>
-                <div className="action-buttons">
-                  <button
-                    type="button"
-                    onClick={() => setShowEditModal(false)}
-                    className="action-button btn-secondary"
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="action-button btn-primary">
-                    Update Customer
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog open={showEditModal} onClose={() => setShowEditModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Customer</DialogTitle>
+        <Box component="form" onSubmit={handleEditCustomer}>
+          <DialogContent>
+            <TextField
+              fullWidth
+              label="Name"
+              value={selectedCustomer?.name || ''}
+              onChange={(e) => setSelectedCustomer({ ...selectedCustomer, name: e.target.value })}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Email"
+              type="email"
+              value={selectedCustomer?.email || ''}
+              onChange={(e) => setSelectedCustomer({ ...selectedCustomer, email: e.target.value })}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Phone"
+              value={selectedCustomer?.phone || ''}
+              onChange={(e) => setSelectedCustomer({ ...selectedCustomer, phone: e.target.value })}
+              margin="normal"
+            />
+            <TextField
+              fullWidth
+              label="Address"
+              multiline
+              rows={3}
+              value={selectedCustomer?.address || ''}
+              onChange={(e) => setSelectedCustomer({ ...selectedCustomer, address: e.target.value })}
+              margin="normal"
+            />
+            <TextField
+              fullWidth
+              label="Package Fee"
+              type="number"
+              value={selectedCustomer?.package_fee || ''}
+              onChange={(e) => setSelectedCustomer({ ...selectedCustomer, package_fee: e.target.value })}
+              margin="normal"
+              required
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowEditModal(false)}>Cancel</Button>
+            <Button type="submit" variant="contained">Update Customer</Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
 
       {/* Add Payment Modal */}
-      {showPaymentModal && selectedCustomer && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="mt-3">
-              <h3 className="text-responsive-lg font-medium text-gray-900 mb-4">Add Payment for {selectedCustomer.name}</h3>
-              <form onSubmit={handleAddPayment} className="space-y-4">
-                <div>
-                  <label className="block text-responsive-sm font-medium text-gray-700">Amount</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    className="input-field touch-target"
-                    value={newPayment.amount}
-                    onChange={(e) => setNewPayment({...newPayment, amount: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label className="block text-responsive-sm font-medium text-gray-700">Description</label>
-                  <textarea
-                    className="input-field touch-target"
-                    rows="3"
-                    value={newPayment.description}
-                    onChange={(e) => setNewPayment({...newPayment, description: e.target.value})}
-                  />
-                </div>
-                <div className="action-buttons">
-                  <button
-                    type="button"
-                    onClick={() => setShowPaymentModal(false)}
-                    className="action-button btn-secondary"
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="action-button btn-primary">
-                    Add Payment
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      <Dialog open={showPaymentModal} onClose={() => setShowPaymentModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add Payment for {selectedCustomer?.name}</DialogTitle>
+        <Box component="form" onSubmit={handleAddPayment}>
+          <DialogContent>
+            <TextField
+              fullWidth
+              label="Amount"
+              type="number"
+              value={newPayment.amount}
+              onChange={(e) => setNewPayment({ ...newPayment, amount: e.target.value })}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Description"
+              multiline
+              rows={3}
+              value={newPayment.description}
+              onChange={(e) => setNewPayment({ ...newPayment, description: e.target.value })}
+              margin="normal"
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowPaymentModal(false)}>Cancel</Button>
+            <Button type="submit" variant="contained">Add Payment</Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+    </Box>
   );
 };
 

@@ -1,18 +1,61 @@
-import React, { useState, useEffect, useRef } from 'react';
-import ReactDOM from 'react-dom';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { userService } from '../services/api';
 import { useNotification } from '../contexts/NotificationContext';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import Pagination from '../components/Pagination';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  TextField,
+  IconButton,
+  Menu,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  Avatar,
+  Grid,
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  useTheme,
+  useMediaQuery,
+} from '@mui/material';
+import {
+  Add,
+  MoreVert,
+  Edit,
+  Delete,
+  Person,
+  AdminPanelSettings,
+  Badge,
+} from '@mui/icons-material';
 
 const UserManagement = () => {
   const { isAdmin } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedUserForMenu, setSelectedUserForMenu] = useState(null);
   const [newUser, setNewUser] = useState({
     username: '',
     email: '',
@@ -20,9 +63,6 @@ const UserManagement = () => {
     user_type: 'employee', // Default to employee
   });
   const [editPassword, setEditPassword] = useState('');
-  const [activeMenuId, setActiveMenuId] = useState(null); // State to track which menu is open
-  const menuButtonRefs = useRef({}); // Ref to store individual menu button elements
-  const menuPosition = useRef({ top: 0, left: 0 }); // To store menu position
 
   const { showSuccess, showError } = useNotification();
 
@@ -49,35 +89,18 @@ const UserManagement = () => {
     }
   }, [isAdmin, pagination.currentPage, pagination.itemsPerPage], 30000);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      // Check if the click is outside any active menu and not on a menu button
-      const clickedOutsideMenu = activeMenuId && !event.target.closest('.menu-dropdown-content');
-      const clickedOnDifferentButton = activeMenuId && menuButtonRefs.current[activeMenuId] && !menuButtonRefs.current[activeMenuId].contains(event.target);
-
-      if (clickedOutsideMenu && clickedOnDifferentButton) {
-        setActiveMenuId(null);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [activeMenuId]);
-
   const fetchUsers = async () => {
     try {
       setLoading(true);
       const params = {
-        page: pagination.currentPage,
-        page_size: pagination.itemsPerPage
+        page_size: 9999 // Fetch all users for inspection
       };
       const response = await userService.getUsers(params);
       
       // Handle paginated response
       if (response.results) {
         setUsers(response.results);
+        console.log('User Management - Fetched Users Data (all):', response.results);
         setPagination(prev => ({
           ...prev,
           currentPage: response.current_page || 1,
@@ -90,6 +113,7 @@ const UserManagement = () => {
       } else {
         // Fallback for non-paginated response
         setUsers(response);
+        console.log('User Management - Fetched Users Data (all) (non-paginated):', response);
         setPagination(prev => ({
           ...prev,
           totalItems: response.length || 0,
@@ -182,510 +206,453 @@ const UserManagement = () => {
     setSelectedUser({ ...user, user_type: user.is_staff || user.is_superuser ? 'admin' : 'employee' });
     setEditPassword(''); // Clear password field when opening modal
     setShowEditModal(true);
-    setActiveMenuId(null); // Close menu after selecting edit
+    setAnchorEl(null);
   };
 
-  const toggleMenu = (userId, buttonElement) => {
-    if (activeMenuId === userId) {
-      setActiveMenuId(null);
-    } else {
-      // Calculate position of the button to place the menu
-      const rect = buttonElement.getBoundingClientRect();
-      menuPosition.current = {
-        top: rect.top + window.scrollY + rect.height, // Position below button
-        left: rect.right + window.scrollX - 200, // Align right side of menu with right side of button, shifted left for clearance
-      };
-      setActiveMenuId(userId);
+  const handleMenuOpen = (event, user) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedUserForMenu(user);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedUserForMenu(null);
+  };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false, // Use 24-hour format
+      });
+    } catch (e) {
+      console.error("Error parsing date string in UserManagement:", dateString, e);
+      return 'Invalid Date';
     }
   };
 
-  const activeUsers = users.filter(user => user.is_active).length;
-  const inactiveUsers = users.filter(user => !user.is_active).length;
-
-  if (!isAdmin()) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-responsive-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-          <p className="text-responsive-base text-gray-600">You don't have permission to access this page.</p>
-        </div>
-      </div>
-    );
-  }
+  const adminUsers = users.filter(user => user.is_staff || user.is_superuser);
+  const employeeUsers = users.filter(user => !user.is_staff && !user.is_superuser);
 
   return (
-    <div className="container-responsive">
+    <Box sx={{ maxWidth: 1280, mx: 'auto', px: { xs: 2, sm: 3, lg: 4 } }}>
       {/* Header */}
-      <div className="flex-responsive justify-between items-start sm:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-responsive-3xl font-extrabold text-gray-900">User Management</h1>
-          <p className="text-responsive-base text-gray-600 mt-1">Manage system users and permissions</p>
-        </div>
-        <div className="action-buttons">
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="action-button btn-primary"
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          mb: 3,
+          gap: 2,
+        }}
+      >
+        <Box>
+          <Typography
+            variant="h3"
+            component="h1"
+            sx={{
+              fontWeight: 700,
+              fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+            }}
           >
-            Add User
-          </button>
-        </div>
-      </div>
+            User Management
+          </Typography>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ mt: 0.5, fontSize: { xs: '0.875rem', sm: '1rem' } }}
+          >
+            Manage system users and permissions
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => setShowAddModal(true)}
+          sx={{ minWidth: { xs: '100%', sm: 'auto' } }}
+        >
+          Add User
+        </Button>
+      </Box>
 
-      {/* User Summary Cards */}
-      <div className="stats-grid mb-6">
-        <div className="card bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-4 sm:p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
-          <div className="flex items-center space-x-3 sm:space-x-4">
-            <div className="p-3 sm:p-4 rounded-full bg-white bg-opacity-20">
-              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-responsive-sm opacity-80">Total Users</p>
-              <p className="text-responsive-2xl sm:text-3xl font-bold mt-1">{pagination.totalItems}</p>
-            </div>
-          </div>
-        </div>
+      {/* Summary Cards */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' }, // Stack on small screens, row on larger
+          gap: 3, // Spacing between cards
+          mb: 3,
+        }}
+      >
+        <Card
+          sx={{
+            flex: 1, // Distribute available space equally
+            minWidth: { xs: '100%', sm: 'auto' }, // Ensure full width on extra-small screens
+            background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+            color: 'white',
+            p: 3,
+            borderRadius: 3,
+            boxShadow: 3,
+            transition: 'transform 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.02)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', mr: 2 }}>
+              <Person />
+            </Avatar>
+            <Box>
+              <Typography variant="body2" sx={{ opacity: 0.75 }}>
+                Total Users
+              </Typography>
+              <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                {pagination.totalItems}
+              </Typography>
+            </Box>
+          </Box>
+        </Card>
 
-        <div className="card bg-gradient-to-br from-teal-500 to-teal-600 text-white p-4 sm:p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
-          <div className="flex items-center space-x-3 sm:space-x-4">
-            <div className="p-3 sm:p-4 rounded-full bg-white bg-opacity-20">
-              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-responsive-sm opacity-80">Active Users</p>
-              <p className="text-responsive-2xl sm:text-3xl font-bold mt-1">{activeUsers}</p>
-            </div>
-          </div>
-        </div>
+        <Card
+          sx={{
+            flex: 1, // Distribute available space equally
+            minWidth: { xs: '100%', sm: 'auto' }, // Ensure full width on extra-small screens
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            color: 'white',
+            p: 3,
+            borderRadius: 3,
+            boxShadow: 3,
+            transition: 'transform 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.02)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', mr: 2 }}>
+              <AdminPanelSettings />
+            </Avatar>
+            <Box>
+              <Typography variant="body2" sx={{ opacity: 0.75 }}>
+                Administrators
+              </Typography>
+              <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                {adminUsers.length}
+              </Typography>
+            </Box>
+          </Box>
+        </Card>
 
-        <div className="card bg-gradient-to-br from-rose-500 to-rose-600 text-white p-4 sm:p-6 rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
-          <div className="flex items-center space-x-3 sm:space-x-4">
-            <div className="p-3 sm:p-4 rounded-full bg-white bg-opacity-20">
-              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-responsive-sm opacity-80">Inactive Users</p>
-              <p className="text-responsive-2xl sm:text-3xl font-bold mt-1">{inactiveUsers}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+        <Card
+          sx={{
+            flex: 1, // Distribute available space equally
+            minWidth: { xs: '100%', sm: 'auto' }, // Ensure full width on extra-small screens
+            background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+            color: 'white',
+            p: 3,
+            borderRadius: 3,
+            boxShadow: 3,
+            transition: 'transform 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.02)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', mr: 2 }}>
+              <Badge />
+            </Avatar>
+            <Box>
+              <Typography variant="body2" sx={{ opacity: 0.75 }}>
+                Employees
+              </Typography>
+              <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                {employeeUsers.length}
+              </Typography>
+            </Box>
+          </Box>
+        </Card>
+      </Box>
 
       {/* Users Table */}
-      <div className="card mb-6">
-        <h3 className="text-responsive-lg font-semibold mb-4">System Users</h3>
-        
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-          </div>
-        ) : (
-          <>
-            {/* Mobile Card View */}
-            <div className="block sm:hidden space-y-4">
-              {users.map((user) => (
-                <div key={user.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                        <span className="text-primary-600 font-medium text-sm">
-                          {user.username.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {user.username}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {user.email}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="relative">
-                      <button
-                        ref={el => menuButtonRefs.current[user.id] = el}
-                        type="button"
-                        className="flex items-center justify-center p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 touch-target"
-                        onClick={(e) => toggleMenu(user.id, e.currentTarget)}
-                        aria-expanded={activeMenuId === user.id ? 'true' : 'false'}
-                        aria-haspopup="true"
-                      >
-                        <span className="material-icons text-xl">more_vert</span>
-                      </button>
-
-                      {activeMenuId === user.id && ReactDOM.createPortal(
-                        <div
-                          className="menu-dropdown-content origin-top-right absolute right-0 mt-2 rounded-md shadow-lg bg-white border-0 focus:outline-none z-50 min-w-[120px]"
-                          role="menu"
-                          aria-orientation="vertical"
-                          aria-labelledby={`options-menu-${user.id}`}
-                        >
-                          <div className="py-1">
-                            <button
-                              onClick={() => openEditModal(user)}
-                              className="group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left touch-target"
-                              role="menuitem"
-                            >
-                              <span className="material-icons mr-3 text-lg group-hover:text-indigo-600">edit</span>
-                              Update
-                            </button>
-                          </div>
-                          <div className="py-1">
-                            <button
-                              onClick={() => handleDeleteUser(user.id)}
-                              className="group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left touch-target"
-                              role="menuitem"
-                            >
-                              <span className="material-icons mr-3 text-lg group-hover:text-red-600">delete</span>
-                              Delete
-                            </button>
-                          </div>
-                        </div>,
-                        document.getElementById('portal-root')
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-xs text-gray-500 uppercase tracking-wider">Role</span>
-                      <div className="mt-1">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          user.is_staff || user.is_superuser
-                            ? 'bg-purple-100 text-purple-800'
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {user.is_staff || user.is_superuser ? 'Admin' : 'Employee'}
-                        </span>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-xs text-gray-500 uppercase tracking-wider">Status</span>
-                      <div className="mt-1">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          user.is_active 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {user.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Desktop Table View */}
-            <div className="hidden sm:block table-responsive">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Role
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                            <span className="text-primary-600 font-medium text-sm">
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" component="h3" sx={{ mb: 2, fontWeight: 600 }}>
+            User Records
+          </Typography>
+          
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <>
+              {/* Desktop Table View */}
+              <TableContainer component={Paper} sx={{ display: { xs: 'none', md: 'block' } }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>User</TableCell>
+                      <TableCell>Email</TableCell>
+                      <TableCell>Role</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Created</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Avatar sx={{ bgcolor: 'primary.main' }}>
                               {user.username.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
+                            </Avatar>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
                               {user.username}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {user.email}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          user.is_staff || user.is_superuser
-                            ? 'bg-purple-100 text-purple-800'
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {user.is_staff || user.is_superuser ? 'Admin' : 'Employee'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          user.is_active 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {user.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="relative flex justify-end items-center h-full">
-                          <button
-                            ref={el => menuButtonRefs.current[user.id] = el}
-                            type="button"
-                            className="flex items-center justify-center p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 touch-target"
-                            onClick={(e) => toggleMenu(user.id, e.currentTarget)}
-                            aria-expanded={activeMenuId === user.id ? 'true' : 'false'}
-                            aria-haspopup="true"
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {user.email}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={user.is_staff || user.is_superuser ? 'Administrator' : 'Employee'}
+                            color={user.is_staff || user.is_superuser ? 'secondary' : 'success'}
+                            size="small"
+                            icon={user.is_staff || user.is_superuser ? <AdminPanelSettings /> : <Badge />}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={user.is_active ? 'Active' : 'Inactive'}
+                            color={user.is_active ? 'success' : 'error'}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {formatDateTime(user.date_joined)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton
+                            onClick={(e) => handleMenuOpen(e, user)}
+                            size="small"
                           >
-                            <span className="material-icons text-xl">more_vert</span>
-                          </button>
+                            <MoreVert />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
 
-                          {activeMenuId === user.id && ReactDOM.createPortal(
-                            <div
-                              className="menu-dropdown-content origin-top-right absolute rounded-md shadow-lg bg-white border-0 focus:outline-none z-50"
-                              role="menu"
-                              aria-orientation="vertical"
-                              aria-labelledby={`options-menu-${user.id}`}
-                              style={{ top: `${menuPosition.current.top}px`, left: `${menuPosition.current.left}px` }}
-                            >
-                              <div className="py-1">
-                                <button
-                                  onClick={() => openEditModal(user)}
-                                  className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left touch-target"
-                                  role="menuitem"
-                                >
-                                  <span className="material-icons mr-3 text-lg group-hover:text-indigo-600">edit</span>
-                                  Update
-                                </button>
-                              </div>
-                              <div className="py-1">
-                                <button
-                                  onClick={() => handleDeleteUser(user.id)}
-                                  className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left touch-target"
-                                  role="menuitem"
-                                >
-                                  <span className="material-icons mr-3 text-lg group-hover:text-red-600">delete</span>
-                                  Delete
-                                </button>
-                              </div>
-                            </div>,
-                            document.getElementById('portal-root')
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            
-            {users.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No users found</p>
-              </div>
-            )}
-            
-            {/* Pagination */}
-            <Pagination
-              currentPage={pagination.currentPage}
-              totalPages={pagination.totalPages}
-              hasNext={pagination.hasNext}
-              hasPrevious={pagination.hasPrevious}
-              onPageChange={handlePageChange}
-              onPageSizeChange={handlePageSizeChange}
-              totalItems={pagination.totalItems}
-              itemsPerPage={pagination.itemsPerPage}
-            />
-          </>
-        )}
-      </div>
+              {/* Mobile Card View */}
+              <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+                {users.map((user) => (
+                  <Card
+                    key={user.id}
+                    variant="outlined"
+                    sx={{ mb: 2, p: 2 }}
+                  >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Avatar sx={{ bgcolor: 'primary.main' }}>
+                          {user.username.charAt(0).toUpperCase()}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                            {user.username}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {user.email}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <IconButton
+                        onClick={(e) => handleMenuOpen(e, user)}
+                        size="small"
+                      >
+                        <MoreVert />
+                      </IconButton>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                      <Chip
+                        label={user.is_staff || user.is_superuser ? 'Administrator' : 'Employee'}
+                        color={user.is_staff || user.is_superuser ? 'secondary' : 'success'}
+                        size="small"
+                        icon={user.is_staff || user.is_superuser ? <AdminPanelSettings /> : <Badge />}
+                      />
+                      <Chip
+                        label={user.is_active ? 'Active' : 'Inactive'}
+                        color={user.is_active ? 'success' : 'error'}
+                        size="small"
+                      />
+                    </Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Created: {formatDateTime(user.date_joined)}
+                    </Typography>
+                  </Card>
+                ))}
+              </Box>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={pagination.currentPage}
+        totalPages={pagination.totalPages}
+        hasNext={pagination.hasNext}
+        hasPrevious={pagination.hasPrevious}
+        onPageChange={handlePageChange}
+        totalItems={pagination.totalItems}
+        itemsPerPage={pagination.itemsPerPage}
+        onPageSizeChange={handlePageSizeChange}
+      />
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={() => {
+          openEditModal(selectedUserForMenu);
+          handleMenuClose();
+        }}>
+          <Edit sx={{ mr: 1 }} />
+          Edit
+        </MenuItem>
+        <MenuItem onClick={() => {
+          handleDeleteUser(selectedUserForMenu?.id);
+          handleMenuClose();
+        }}>
+          <Delete sx={{ mr: 1 }} />
+          Delete
+        </MenuItem>
+      </Menu>
 
       {/* Add User Modal */}
-      {showAddModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3 className="text-responsive-lg font-semibold mb-4">Add New User</h3>
-            
-            <form onSubmit={handleAddUser} className="space-y-4">
-              <div>
-                <label className="block text-responsive-sm font-medium text-gray-700 mb-2">
-                  Username
-                </label>
-                <input
-                  type="text"
-                  className="input-field touch-target"
-                  value={newUser.username}
-                  onChange={(e) => setNewUser({...newUser, username: e.target.value})}
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-responsive-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  className="input-field touch-target"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-responsive-sm font-medium text-gray-700 mb-2">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  className="input-field touch-target"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                  required
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="user_type" className="block text-responsive-sm font-medium text-gray-700 mb-2">
-                  User Type
-                </label>
-                <select
-                  id="user_type"
-                  className="input-field touch-target"
-                  value={newUser.user_type}
-                  onChange={(e) => setNewUser({...newUser, user_type: e.target.value})}
-                >
-                  <option value="employee">Employee</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-              
-              <div className="action-buttons">
-                <button
-                  type="submit"
-                  className="action-button btn-primary"
-                >
-                  Add User
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="action-button btn-secondary"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <Dialog open={showAddModal} onClose={() => setShowAddModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add New User</DialogTitle>
+        <Box component="form" onSubmit={handleAddUser}>
+          <DialogContent>
+            <TextField
+              fullWidth
+              label="Username"
+              value={newUser.username}
+              onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Email"
+              type="email"
+              value={newUser.email}
+              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Password"
+              type="password"
+              value={newUser.password}
+              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+              margin="normal"
+              required
+            />
+            <FormControl fullWidth margin="normal">
+              <InputLabel>User Type</InputLabel>
+              <Select
+                value={newUser.user_type}
+                onChange={(e) => setNewUser({ ...newUser, user_type: e.target.value })}
+                label="User Type"
+                required
+              >
+                <MenuItem value="employee">Employee</MenuItem>
+                <MenuItem value="admin">Administrator</MenuItem>
+              </Select>
+            </FormControl>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowAddModal(false)}>Cancel</Button>
+            <Button type="submit" variant="contained">Add User</Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
 
       {/* Edit User Modal */}
-      {showEditModal && selectedUser && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3 className="text-responsive-lg font-medium text-gray-900 mb-4">Edit User</h3>
-            <form onSubmit={handleEditUser} className="space-y-4">
-              <div>
-                <label className="block text-responsive-sm font-medium text-gray-700 mb-2">
-                  Username
-                </label>
-                <input
-                  type="text"
-                  className="input-field touch-target"
-                  value={selectedUser.username}
-                  onChange={(e) => setSelectedUser({...selectedUser, username: e.target.value})}
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-responsive-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  className="input-field touch-target"
-                  value={selectedUser.email}
-                  onChange={(e) => setSelectedUser({...selectedUser, email: e.target.value})}
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-responsive-sm font-medium text-gray-700 mb-2">
-                  New Password (leave blank to keep current)
-                </label>
-                <input
-                  type="password"
-                  className="input-field touch-target"
-                  value={editPassword}
-                  onChange={(e) => setEditPassword(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="edit_user_type" className="block text-responsive-sm font-medium text-gray-700 mb-2">
-                  User Type
-                </label>
-                <select
-                  id="edit_user_type"
-                  className="input-field touch-target"
-                  value={selectedUser.user_type}
-                  onChange={(e) => setSelectedUser({...selectedUser, user_type: e.target.value})}
-                >
-                  <option value="employee">Employee</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 touch-target"
-                    checked={selectedUser.is_active}
-                    onChange={(e) => setSelectedUser({...selectedUser, is_active: e.target.checked})}
-                  />
-                  <span className="ml-2 text-responsive-sm text-gray-700">Active</span>
-                </label>
-              </div>
-
-              <div className="action-buttons">
-                <button
-                  type="submit"
-                  className="action-button btn-primary"
-                >
-                  Save Changes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowEditModal(false)}
-                  className="action-button btn-secondary"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+      <Dialog open={showEditModal} onClose={() => setShowEditModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit User</DialogTitle>
+        <Box component="form" onSubmit={handleEditUser}>
+          <DialogContent>
+            <TextField
+              fullWidth
+              label="Username"
+              value={selectedUser?.username || ''}
+              onChange={(e) => setSelectedUser({ ...selectedUser, username: e.target.value })}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Email"
+              type="email"
+              value={selectedUser?.email || ''}
+              onChange={(e) => setSelectedUser({ ...selectedUser, email: e.target.value })}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="New Password (leave blank to keep current)"
+              type="password"
+              value={editPassword}
+              onChange={(e) => setEditPassword(e.target.value)}
+              margin="normal"
+              helperText="Only fill this if you want to change the password"
+            />
+            <FormControl fullWidth margin="normal">
+              <InputLabel>User Type</InputLabel>
+              <Select
+                value={selectedUser?.user_type || 'employee'}
+                onChange={(e) => setSelectedUser({ ...selectedUser, user_type: e.target.value })}
+                label="User Type"
+                required
+              >
+                <MenuItem value="employee">Employee</MenuItem>
+                <MenuItem value="admin">Administrator</MenuItem>
+              </Select>
+            </FormControl>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowEditModal(false)}>Cancel</Button>
+            <Button type="submit" variant="contained">Update User</Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+    </Box>
   );
 };
 

@@ -4,9 +4,32 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import Pagination from '../components/Pagination';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Avatar,
+  Chip,
+  Grid,
+  CircularProgress,
+  Alert,
+  AlertTitle,
+  useTheme,
+  useMediaQuery,
+} from '@mui/material';
+import {
+  Person,
+  Add,
+  Edit,
+  Delete,
+  Info,
+} from '@mui/icons-material';
 
 const Logs = () => {
   const { isAdmin } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { showSuccess } = useNotification();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -100,179 +123,165 @@ const Logs = () => {
     }));
   };
 
+  const getActionColor = (action) => {
+    if (action?.includes('created')) return 'success';
+    if (action?.includes('updated')) return 'primary';
+    if (action?.includes('deleted')) return 'error';
+    return 'default';
+  };
+
+  const getActionIcon = (action) => {
+    if (action?.includes('created')) return <Add />;
+    if (action?.includes('updated')) return <Edit />;
+    if (action?.includes('deleted')) return <Delete />;
+    return <Info />;
+  };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }) + ' ' + date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Error Date';
+    }
+  };
+
   if (!isAdmin || !isAdmin()) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-responsive-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-          <p className="text-responsive-base text-gray-600">You don't have permission to access this page.</p>
-        </div>
-      </div>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '50vh',
+        }}
+      >
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h4" component="h2" sx={{ fontWeight: 700, mb: 2 }}>
+            Access Denied
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            You don't have permission to access this page.
+          </Typography>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <div className="container-responsive">
-      <div className="mb-6">
-        <div className="flex-responsive justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-responsive-3xl font-extrabold text-gray-900">System Logs</h1>
-            <p className="text-responsive-base text-gray-600 mt-1">All actions performed in the system are listed below.</p>
-          </div>
-        </div>
-      </div>
-      {loading ? (
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-        </div>
-      ) : error ? (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-responsive-sm font-medium text-red-800">Error</h3>
-              <div className="mt-2 text-responsive-sm text-red-700">{error}</div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="card">
-          <h3 className="text-responsive-lg font-semibold mb-4">Activity Logs</h3>
-          
-          {/* Mobile Card View */}
-          <div className="block sm:hidden space-y-4">
-            {logs.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No logs found.</p>
-              </div>
-            ) : (
-              logs.map((log) => (
-                <div key={log.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                        <span className="text-primary-600 font-medium text-sm">
-                          {log.user_username?.charAt(0).toUpperCase() || 'U'}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {log.user_username || 'Unknown User'}
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        log.action?.includes('created') ? 'bg-green-100 text-green-800' :
-                        log.action?.includes('updated') ? 'bg-blue-100 text-blue-800' :
-                        log.action?.includes('deleted') ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {log.action_display || log.action}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {log.description && (
-                    <div className="mb-3">
-                      <span className="text-xs text-gray-500 uppercase tracking-wider">Description</span>
-                      <div className="mt-1 text-sm text-gray-900">
-                        {log.description}
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="border-t pt-3">
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <div>
-                        <span className="block">Date:</span>
-                        <span className="font-medium">{new Date(log.created_at).toLocaleDateString()}</span>
-                      </div>
-                      <div>
-                        <span className="block">Time:</span>
-                        <span className="font-medium">{new Date(log.created_at).toLocaleTimeString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+    <Box sx={{ maxWidth: 1280, mx: 'auto', px: 0 }}>
+      {/* Header */}
+      <Box sx={{ mb: 3, px: { xs: 2, sm: 3, lg: 4 } }}>
+        <Typography
+          variant="h3"
+          component="h1"
+          sx={{
+            fontWeight: 700,
+            fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+          }}
+        >
+          System Logs
+        </Typography>
+        <Typography
+          variant="body1"
+          color="text.secondary"
+          sx={{ mt: 0.5, fontSize: { xs: '0.875rem', sm: '1rem' } }}
+        >
+          All actions performed in the system are listed below.
+        </Typography>
+      </Box>
 
-          {/* Desktop Table View */}
-          <div className="hidden sm:block table-responsive">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {logs.length === 0 ? (
-                  <tr>
-                    <td colSpan="4" className="text-center py-8 text-gray-500">No logs found.</td>
-                  </tr>
-                ) : (
-                  logs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                            <span className="text-primary-600 font-medium text-sm">
-                              {log.user_username?.charAt(0).toUpperCase() || 'U'}
-                            </span>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{log.user_username || 'Unknown User'}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          log.action?.includes('created') ? 'bg-green-100 text-green-800' :
-                          log.action?.includes('updated') ? 'bg-blue-100 text-blue-800' :
-                          log.action?.includes('deleted') ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {log.action_display || log.action}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 max-w-md truncate" title={log.description}>
-                          {log.description}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(log.created_at).toLocaleString()}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          
-          {/* Pagination */}
-          <Pagination
-            currentPage={pagination.currentPage}
-            totalPages={pagination.totalPages}
-            hasNext={pagination.hasNext}
-            hasPrevious={pagination.hasPrevious}
-            totalItems={pagination.totalItems}
-            itemsPerPage={pagination.itemsPerPage}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-          />
-        </div>
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : error ? (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          <AlertTitle>Error</AlertTitle>
+          {error}
+        </Alert>
+      ) : (
+        <Card>
+          <CardContent sx={{ p: 0 }}>
+            <Typography variant="h6" component="h3" sx={{ mb: 2, fontWeight: 600, px: 2, pt: 2 }}>
+              Activity Logs
+            </Typography>
+            
+            {/* Mobile Card View */}
+            <Box sx={{ display: { xs: 'block' }, px: 2, pb: 2 }}>
+              {logs.length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography color="text.secondary">No logs found.</Typography>
+                </Box>
+              ) : (
+                logs.map((log) => (
+                  <Card
+                    key={log.id}
+                    variant="outlined"
+                    sx={{ mb: 1, p: 0 }}
+                  >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1, px: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1, minWidth: 0 }}>
+                        <Avatar sx={{ bgcolor: 'primary.main', flexShrink: 0, width: 24, height: 24, fontSize: '0.75rem' }}>
+                          {log.user_username?.charAt(0).toUpperCase() || 'U'}
+                        </Avatar>
+                        <Typography variant="caption" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {log.user_username || 'Unknown User'}
+                          {log.description && (
+                            <Typography component="span" variant="caption" color="text.secondary" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingLeft: 1 }}>
+                              {log.description}
+                            </Typography>
+                          )}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0, ml: 'auto' }}>
+                        <Chip
+                          label={log.action_display || log.action}
+                          color={getActionColor(log.action)}
+                          size="small"
+                          icon={getActionIcon(log.action)}
+                          sx={{ height: 20, fontSize: '0.7rem', pr: 0, marginRight: 2 }}
+                        />
+                        <Box sx={{ textAlign: 'right' }}>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            {formatDateTime(log.created_at)}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Card>
+                ))
+              )}
+            </Box>    
+          </CardContent>
+        </Card>
       )}
-    </div>
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={pagination.currentPage}
+        totalPages={pagination.totalPages}
+        hasNext={pagination.hasNext}
+        hasPrevious={pagination.hasPrevious}
+        onPageChange={handlePageChange}
+        totalItems={pagination.totalItems}
+        itemsPerPage={pagination.itemsPerPage}
+        onPageSizeChange={handlePageSizeChange}
+      />
+    </Box>
   );
 };
 

@@ -1,5 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { Box, CircularProgress, Typography, Container } from '@mui/material';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
@@ -10,7 +13,7 @@ import Payments from './pages/Payments';
 import CustomerManagement from './pages/CustomerManagement';
 import UserManagement from './pages/UserManagement';
 import Logs from './pages/Logs';
-import './index.css';
+import theme from './theme';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -18,9 +21,14 @@ const ProtectedRoute = ({ children }) => {
   
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        minHeight="100vh"
+      >
+        <CircularProgress />
+      </Box>
     );
   }
   
@@ -33,9 +41,14 @@ const AdminProtectedRoute = ({ children }) => {
   
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        minHeight="100vh"
+      >
+        <CircularProgress />
+      </Box>
     );
   }
   
@@ -45,12 +58,23 @@ const AdminProtectedRoute = ({ children }) => {
   
   if (!isAdmin()) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-          <p className="text-gray-600">You don't have permission to access this page.</p>
-        </div>
-      </div>
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        minHeight="100vh"
+      >
+        <Container maxWidth="sm">
+          <Box textAlign="center">
+            <Typography variant="h4" component="h2" gutterBottom>
+              Access Denied
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              You don't have permission to access this page.
+            </Typography>
+          </Box>
+        </Container>
+      </Box>
     );
   }
   
@@ -62,18 +86,36 @@ const Layout = ({ children }) => {
   const { isSidebarCollapsed } = useSidebar();
   
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <Box display="flex" minHeight="100vh" bgcolor="background.default">
       <Navigation />
-      <div className={`flex-1 transition-all duration-300 ease-in-out ${
-        isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
-      }`}>
-        <div className={`px-4 sm:px-6 lg:px-8 pb-6 transition-all duration-300 ease-in-out ${
-          isSidebarCollapsed ? 'pt-20 lg:pt-6' : 'pt-16 lg:pt-6'
-        }`}>
+      <Box
+        flex={1}
+        sx={{
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          marginLeft: {
+            lg: isSidebarCollapsed ? '64px' : '256px',
+          },
+        }}
+      >
+        <Box
+          sx={{
+            padding: {
+              xs: 2,
+              sm: 3,
+              lg: 4,
+            },
+            paddingTop: {
+              xs: 8,
+              lg: 3,
+            },
+            paddingBottom: 3,
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+        >
           {children}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 
@@ -152,13 +194,16 @@ const AppContent = () => {
 // App Component with Providers
 const App = () => {
   return (
-    <AuthProvider>
-      <SidebarProvider>
-        <NotificationProvider>
-          <AppContent />
-        </NotificationProvider>
-      </SidebarProvider>
-    </AuthProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AuthProvider>
+        <SidebarProvider>
+          <NotificationProvider>
+            <AppContent />
+          </NotificationProvider>
+        </SidebarProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 };
 
