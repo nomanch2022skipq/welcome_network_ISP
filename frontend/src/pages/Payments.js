@@ -31,6 +31,7 @@ import {
   FormControl,
   InputLabel,
   Select,
+  Autocomplete,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
@@ -80,7 +81,7 @@ const Payments = () => {
     itemsPerPage: 10
   });
 
-  const { showNotification } = useNotification();
+  const { showSuccess, showError, showInfo } = useNotification();
 
   useEffect(() => {
     fetchPayments();
@@ -173,10 +174,10 @@ const Payments = () => {
       // Reset to first page after adding
       setPagination(prev => ({ ...prev, currentPage: 1 }));
       fetchPayments();
-      showNotification('Payment added successfully', 'success');
+      showSuccess('Payment added successfully');
     } catch (error) {
       console.error('Error creating payment:', error);
-      showNotification('Error creating payment', 'error');
+      showError('Error creating payment');
     }
   };
 
@@ -191,22 +192,22 @@ const Payments = () => {
       setShowEditModal(false);
       setSelectedPayment(null);
       fetchPayments();
-      showNotification('Payment updated successfully', 'success');
+      showSuccess('Payment updated successfully');
     } catch (error) {
       console.error('Error updating payment:', error);
-      showNotification('Error updating payment', 'error');
+      showError('Error updating payment');
     }
   };
 
-  const handleDeletePayment = async (paymentId) => {
-    if (window.confirm('Are you sure you want to delete this payment?')) {
+  const handleDeactivatePayment = async (paymentId) => {
+    if (window.confirm('Are you sure you want to deactivate this payment?')) {
       try {
         await paymentService.deletePayment(paymentId);
         fetchPayments();
-        showNotification('Payment deleted successfully', 'success');
-      } catch (error) {
-        console.error('Error deleting payment:', error);
-        showNotification('Error deleting payment', 'error');
+              showSuccess('Payment deactivated successfully');
+    } catch (error) {
+      console.error('Error deactivating payment:', error);
+      showError('Error deactivating payment');
       }
     }
   };
@@ -231,6 +232,7 @@ const Payments = () => {
     });
     setShowEditModal(true);
     setAnchorEl(null);
+    showInfo(`Editing payment: ₹${payment.amount} for ${payment.customer.name}`);
   };
 
   const handleMenuOpen = (event, payment) => {
@@ -330,7 +332,10 @@ const Payments = () => {
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            setShowAddModal(true);
+            showInfo('Opening new payment form');
+          }}
           sx={{ minWidth: { xs: '100%', sm: 'auto' } }}
         >
           Add Payment
@@ -710,11 +715,11 @@ const Payments = () => {
           Edit
         </MenuItem>
         <MenuItem onClick={() => {
-          handleDeletePayment(selectedPaymentForMenu?.id);
+          handleDeactivatePayment(selectedPaymentForMenu?.id);
           handleMenuClose();
         }}>
           <Delete sx={{ mr: 1 }} />
-          Delete
+          Deactivate
         </MenuItem>
       </Menu>
 
@@ -723,29 +728,61 @@ const Payments = () => {
         <DialogTitle>Add New Payment</DialogTitle>
         <Box component="form" onSubmit={handleAddPayment}>
           <DialogContent>
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Customer</InputLabel>
-              <Select
-                value={newPayment.customer_id}
-                onChange={(e) => {
-                  const selectedCustomerId = e.target.value;
-                  const selectedCustomer = customers.find(cust => cust.id === selectedCustomerId);
-                  setNewPayment({
-                    ...newPayment,
-                    customer_id: selectedCustomerId,
-                    amount: selectedCustomer ? selectedCustomer.package_fee : '',
-                  });
-                }}
-                label="Customer"
-                required
-              >
-                {customers.map((customer) => (
-                  <MenuItem key={customer.id} value={customer.id}>
-                    {customer.name} - {customer.email}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Autocomplete
+              fullWidth
+              options={customers}
+              getOptionLabel={(option) => `${option.name} - ${option.email}`}
+              value={customers.find(customer => customer.id === newPayment.customer_id) || null}
+              onChange={(event, selectedCustomer) => {
+                setNewPayment({
+                  ...newPayment,
+                  customer_id: selectedCustomer ? selectedCustomer.id : '',
+                  amount: selectedCustomer ? selectedCustomer.package_fee : '',
+                });
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Search Customer"
+                  placeholder="Type customer name or email..."
+                  margin="normal"
+                  required
+                  helperText="Search by customer name or email address"
+                />
+              )}
+              renderOption={(props, option) => (
+                <Box component="li" {...props}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+                    <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
+                      {option.name.charAt(0).toUpperCase()}
+                    </Avatar>
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {option.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {option.email} • Package: ₹{option.package_fee}
+                      </Typography>
+                    </Box>
+                    <Chip
+                      label={option.is_active ? 'Active' : 'Inactive'}
+                      color={option.is_active ? 'success' : 'error'}
+                      size="small"
+                    />
+                  </Box>
+                </Box>
+              )}
+              filterOptions={(options, { inputValue }) => {
+                return options.filter(option =>
+                  option.name.toLowerCase().includes(inputValue.toLowerCase()) ||
+                  option.email.toLowerCase().includes(inputValue.toLowerCase()) ||
+                  option.phone?.toLowerCase().includes(inputValue.toLowerCase())
+                );
+              }}
+              noOptionsText="No customers found"
+              clearOnEscape
+              sx={{ margin: '16px 0 8px 0' }}
+            />
             <TextField
               fullWidth
               label="Amount"
@@ -777,21 +814,60 @@ const Payments = () => {
         <DialogTitle>Edit Payment</DialogTitle>
         <Box component="form" onSubmit={handleEditPayment}>
           <DialogContent>
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Customer</InputLabel>
-              <Select
-                value={selectedPayment?.customer_id || ''}
-                onChange={(e) => setSelectedPayment({ ...selectedPayment, customer_id: e.target.value })}
-                label="Customer"
-                required
-              >
-                {customers.map((customer) => (
-                  <MenuItem key={customer.id} value={customer.id}>
-                    {customer.name} - {customer.email}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Autocomplete
+              fullWidth
+              options={customers}
+              getOptionLabel={(option) => `${option.name} - ${option.email}`}
+              value={customers.find(customer => customer.id === selectedPayment?.customer_id) || null}
+              onChange={(event, selectedCustomer) => {
+                setSelectedPayment({
+                  ...selectedPayment,
+                  customer_id: selectedCustomer ? selectedCustomer.id : '',
+                });
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Search Customer"
+                  placeholder="Type customer name or email..."
+                  margin="normal"
+                  required
+                  helperText="Search by customer name or email address"
+                />
+              )}
+              renderOption={(props, option) => (
+                <Box component="li" {...props}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+                    <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
+                      {option.name.charAt(0).toUpperCase()}
+                    </Avatar>
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {option.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {option.email} • Package: ₹{option.package_fee}
+                      </Typography>
+                    </Box>
+                    <Chip
+                      label={option.is_active ? 'Active' : 'Inactive'}
+                      color={option.is_active ? 'success' : 'error'}
+                      size="small"
+                    />
+                  </Box>
+                </Box>
+              )}
+              filterOptions={(options, { inputValue }) => {
+                return options.filter(option =>
+                  option.name.toLowerCase().includes(inputValue.toLowerCase()) ||
+                  option.email.toLowerCase().includes(inputValue.toLowerCase()) ||
+                  option.phone?.toLowerCase().includes(inputValue.toLowerCase())
+                );
+              }}
+              noOptionsText="No customers found"
+              clearOnEscape
+              sx={{ margin: '16px 0 8px 0' }}
+            />
             <TextField
               fullWidth
               label="Amount"

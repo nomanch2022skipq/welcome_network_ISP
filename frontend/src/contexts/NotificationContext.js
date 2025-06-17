@@ -14,7 +14,7 @@ export const useNotification = () => {
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
 
-  const showNotification = (message, type = 'success', duration = 3000) => {
+  const showNotification = (message, type = 'success', duration = 1500) => {
     const id = Date.now();
     const newNotification = { id, message, type, duration };
     
@@ -32,19 +32,19 @@ export const NotificationProvider = ({ children }) => {
     setNotifications(prev => prev.filter(notification => notification.id !== id));
   };
 
-  const showSuccess = (message, duration = 3000) => {
+  const showSuccess = (message, duration = 1500) => {
     showNotification(message, 'success', duration);
   };
 
-  const showError = (message, duration = 5000) => {
+  const showError = (message, duration = 2000) => {
     showNotification(message, 'error', duration);
   };
 
-  const showWarning = (message, duration = 4000) => {
+  const showWarning = (message, duration = 1800) => {
     showNotification(message, 'warning', duration);
   };
 
-  const showInfo = (message, duration = 3000) => {
+  const showInfo = (message, duration = 1200) => {
     showNotification(message, 'info', duration);
   };
 
@@ -66,7 +66,7 @@ export const NotificationProvider = ({ children }) => {
           message={notification.message}
           type={notification.type}
           onClose={() => removeNotification(notification.id)}
-          duration={0} // We handle duration in the context
+          duration={notification.duration}
         />
       ))}
     </NotificationContext.Provider>

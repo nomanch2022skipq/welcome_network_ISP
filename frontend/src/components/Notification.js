@@ -1,16 +1,8 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Snackbar, Alert, IconButton } from '@mui/material';
 import { Close } from '@mui/icons-material';
 
-const Notification = ({ message, type = 'success', onClose, duration = 3000 }) => {
-  useEffect(() => {
-    if (duration > 0) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, duration);
-      return () => clearTimeout(timer);
-    }
-  }, [duration, onClose]);
+const Notification = ({ message, type = 'success', onClose, duration }) => {
 
   const handleClose = (event, reason) => {
     if (reason === 'clickaway') {

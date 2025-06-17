@@ -43,7 +43,7 @@ class CustomerListCreateAPIView(generics.ListCreateAPIView):
         queryset = Customer.objects.all()
         user = self.request.user
         
-        # Admins and employees can see all customers
+        # Admins and employees can see all customers (active and inactive)
         # The `has_object_permission` in IsAdminOrOwner will handle object-level permissions for updates/deletes
         return queryset
 
@@ -61,7 +61,16 @@ class CustomerRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
         serializer.save()
 
     def perform_destroy(self, instance):
-        instance.delete()
+        # Soft delete: set is_active to False instead of deleting
+        instance.is_active = False
+        instance.save()
+        
+        # Log the deactivation
+        Log.objects.create(
+            user=self.request.user,
+            action='customer_deleted',
+            description=f'Customer "{instance.name}" ({instance.email}) was deactivated'
+        )
 
 class UserRegistrationView(APIView):
     permission_classes = [IsAdminUser]
@@ -114,7 +123,58 @@ class UserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
         serializer.save()
 
     def perform_destroy(self, instance):
-        instance.delete()
+        # Soft delete: set is_active to False instead of deleting
+        instance.is_active = False
+        instance.save()
+        
+        # Log the deactivation
+        Log.objects.create(
+            user=self.request.user,
+            action='user_deleted',
+            description=f'User "{instance.username}" was deactivated'
+        )
+
+class CustomerReactivateAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, pk):
+        try:
+            customer = Customer.objects.get(pk=pk)
+            customer.is_active = True
+            customer.save()
+            
+            # Log the reactivation
+            Log.objects.create(
+                user=request.user,
+                action='customer_updated',
+                description=f'Customer "{customer.name}" ({customer.email}) was reactivated'
+            )
+            
+            return Response({'message': 'Customer reactivated successfully'}, status=status.HTTP_200_OK)
+        except Customer.DoesNotExist:
+            return Response({'error': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class UserReactivateAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAdminUser]
+    
+    def post(self, request, pk):
+        try:
+            user = User.objects.get(pk=pk)
+            user.is_active = True
+            user.save()
+            
+            # Log the reactivation
+            Log.objects.create(
+                user=request.user,
+                action='user_updated',
+                description=f'User "{user.username}" was reactivated'
+            )
+            
+            return Response({'message': 'User reactivated successfully'}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
 class PaymentListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = PaymentSerializer
@@ -214,7 +274,16 @@ class PaymentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
         serializer.save()
 
     def perform_destroy(self, instance):
-        instance.delete()
+        # Soft delete: set is_active to False instead of deleting
+        instance.is_active = False
+        instance.save()
+        
+        # Log the deactivation
+        Log.objects.create(
+            user=self.request.user,
+            action='payment_deleted',
+            description=f'Payment {instance.id} for "{instance.customer.name}" (₹{instance.amount}) was deactivated'
+        )
 
 class LogListView(generics.ListAPIView):
     serializer_class = LogSerializer

@@ -44,8 +44,6 @@ import {
   People,
   CheckCircle,
   Cancel,
-  Visibility,
-  VisibilityOff,
 } from '@mui/icons-material';
 
 const CustomerManagement = () => {
@@ -59,7 +57,6 @@ const CustomerManagement = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showInactive, setShowInactive] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedCustomerForMenu, setSelectedCustomerForMenu] = useState(null);
   const [newCustomer, setNewCustomer] = useState({
@@ -74,7 +71,7 @@ const CustomerManagement = () => {
     description: '',
   });
 
-  const { showSuccess, showError } = useNotification();
+  const { showSuccess, showError, showInfo } = useNotification();
 
   // Pagination state
   const [pagination, setPagination] = useState({
@@ -88,14 +85,13 @@ const CustomerManagement = () => {
 
   useEffect(() => {
     fetchCustomers();
-  }, [searchTerm, pagination.currentPage, pagination.itemsPerPage, showInactive]);
+  }, [searchTerm, pagination.currentPage, pagination.itemsPerPage]);
 
   const fetchCustomers = async () => {
     try {
       setLoading(true);
       const params = {
         page_size: 9999, // Fetch all customers for inspection
-        is_active: !showInactive,
       };
       if (searchTerm) {
         params.search = searchTerm;
@@ -182,13 +178,15 @@ const CustomerManagement = () => {
   };
 
   const handleReactivateCustomer = async (customer) => {
-    try {
-      await customerService.updateCustomer(customer.id, { ...customer, is_active: true });
-      fetchCustomers();
-      showSuccess('Customer reactivated successfully');
-    } catch (error) {
-      console.error('Error reactivating customer:', error);
-      showError('Error reactivating customer');
+    if (window.confirm('Are you sure you want to reactivate this customer?')) {
+      try {
+        await customerService.reactivateCustomer(customer.id);
+        fetchCustomers();
+        showSuccess('Customer reactivated successfully');
+      } catch (error) {
+        console.error('Error reactivating customer:', error);
+        showError('Error reactivating customer');
+      }
     }
   };
 
@@ -208,6 +206,7 @@ const CustomerManagement = () => {
     setSelectedCustomer({ ...customer });
     setShowEditModal(true);
     setAnchorEl(null);
+    showInfo(`Editing customer: ${customer.name}`);
   };
 
   const openPaymentModal = (customer) => {
@@ -218,6 +217,7 @@ const CustomerManagement = () => {
     });
     setShowPaymentModal(true);
     setAnchorEl(null);
+    showInfo(`Adding payment for: ${customer.name}`);
   };
 
   const handleAddPayment = async (e) => {
@@ -306,7 +306,10 @@ const CustomerManagement = () => {
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            setShowAddModal(true);
+            showInfo('Opening new customer form');
+          }}
           sx={{ minWidth: { xs: '100%', sm: 'auto' } }}
         >
           Add Customer
@@ -330,14 +333,6 @@ const CustomerManagement = () => {
             sx={{ minWidth: { xs: '100%', sm: 'auto' } }}
           >
             Clear
-          </Button>
-          <Button
-            variant={showInactive ? 'contained' : 'outlined'}
-            onClick={() => setShowInactive(!showInactive)}
-            startIcon={showInactive ? <VisibilityOff /> : <Visibility />}
-            sx={{ minWidth: { xs: '100%', sm: 'auto' } }}
-          >
-            {showInactive ? 'Show Active' : 'Show Inactive'}
           </Button>
         </Box>
       </Card>
@@ -446,7 +441,7 @@ const CustomerManagement = () => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h6" component="h3" sx={{ mb: 2, fontWeight: 600 }}>
-            {showInactive ? 'Inactive Customer Records' : 'Active Customer Records'}
+            Customer Records
           </Typography>
           
           {loading ? (
@@ -609,23 +604,25 @@ const CustomerManagement = () => {
           <Payment sx={{ mr: 1 }} />
           Add Payment
         </MenuItem>
-        {isAdmin() && [
-          <MenuItem key="edit" onClick={() => {
+        {isAdmin() && (
+          <MenuItem onClick={() => {
             openEditModal(selectedCustomerForMenu);
             handleMenuClose();
           }}>
             <Edit sx={{ mr: 1 }} />
             Edit
-          </MenuItem>,
-          <MenuItem key="delete" onClick={() => {
+          </MenuItem>
+        )}
+        {isAdmin() && selectedCustomerForMenu && selectedCustomerForMenu.is_active && (
+          <MenuItem onClick={() => {
             handleDeactivateCustomer(selectedCustomerForMenu?.id);
             handleMenuClose();
           }}>
             <Delete sx={{ mr: 1 }} />
             Deactivate
           </MenuItem>
-        ]}
-        {selectedCustomerForMenu && !selectedCustomerForMenu.is_active && (
+        )}
+        {isAdmin() && selectedCustomerForMenu && !selectedCustomerForMenu.is_active && (
           <MenuItem onClick={() => {
             handleReactivateCustomer(selectedCustomerForMenu);
             handleMenuClose();

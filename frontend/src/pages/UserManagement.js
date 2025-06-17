@@ -44,6 +44,7 @@ import {
   Person,
   AdminPanelSettings,
   Badge,
+  CheckCircle,
 } from '@mui/icons-material';
 
 const UserManagement = () => {
@@ -65,7 +66,7 @@ const UserManagement = () => {
   });
   const [editPassword, setEditPassword] = useState('');
 
-  const { showSuccess, showError } = useNotification();
+  const { showSuccess, showError, showInfo } = useNotification();
 
   // Pagination state
   const [pagination, setPagination] = useState({
@@ -171,7 +172,7 @@ const UserManagement = () => {
     }
   };
 
-  const handleDeleteUser = async (userId) => {
+  const handleDeactivateUser = async (userId) => {
     if (window.confirm('Are you sure you want to deactivate this user?')) {
       try {
         await userService.deleteUser(userId);
@@ -183,6 +184,23 @@ const UserManagement = () => {
           showError(error.response.data.error);
         } else {
           showError('Error deactivating user');
+        }
+      }
+    }
+  };
+
+  const handleReactivateUser = async (user) => {
+    if (window.confirm('Are you sure you want to reactivate this user?')) {
+      try {
+        await userService.reactivateUser(user.id);
+        fetchUsers();
+        showSuccess('User reactivated successfully');
+      } catch (error) {
+        console.error('Error reactivating user:', error);
+        if (error.response && error.response.data && error.response.data.error) {
+          showError(error.response.data.error);
+        } else {
+          showError('Error reactivating user');
         }
       }
     }
@@ -205,6 +223,7 @@ const UserManagement = () => {
     setEditPassword(''); // Clear password field when opening modal
     setShowEditModal(true);
     setAnchorEl(null);
+    showInfo(`Editing user: ${user.username}`);
   };
 
   const handleMenuOpen = (event, user) => {
@@ -277,7 +296,10 @@ const UserManagement = () => {
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            setShowAddModal(true);
+            showInfo('Opening new user form');
+          }}
           sx={{ minWidth: { xs: '100%', sm: 'auto' } }}
         >
           Add User
@@ -560,13 +582,23 @@ const UserManagement = () => {
           <Edit sx={{ mr: 1 }} />
           Edit
         </MenuItem>
-        <MenuItem onClick={() => {
-          handleDeleteUser(selectedUserForMenu?.id);
-          handleMenuClose();
-        }}>
-          <Delete sx={{ mr: 1 }} />
-          Delete
-        </MenuItem>
+        {selectedUserForMenu && selectedUserForMenu.is_active ? (
+          <MenuItem onClick={() => {
+            handleDeactivateUser(selectedUserForMenu?.id);
+            handleMenuClose();
+          }}>
+            <Delete sx={{ mr: 1 }} />
+            Deactivate
+          </MenuItem>
+        ) : (
+          <MenuItem onClick={() => {
+            handleReactivateUser(selectedUserForMenu);
+            handleMenuClose();
+          }}>
+            <CheckCircle sx={{ mr: 1 }} />
+            Reactivate
+          </MenuItem>
+        )}
       </Menu>
 
       {/* Add User Modal */}
