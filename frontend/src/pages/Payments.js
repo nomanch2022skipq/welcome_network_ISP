@@ -761,7 +761,7 @@ const Payments = () => {
                         {option.name}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {option.email} • Package: ₹{option.package_fee}
+                        {option.email} • Package: {option.package_fee} Rs
                       </Typography>
                     </Box>
                     <Chip
@@ -846,7 +846,7 @@ const Payments = () => {
                         {option.name}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {option.email} • Package: ₹{option.package_fee}
+                        {option.email} • Package: {option.package_fee} Rs
                       </Typography>
                     </Box>
                     <Chip
