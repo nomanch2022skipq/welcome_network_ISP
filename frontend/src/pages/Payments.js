@@ -224,7 +224,11 @@ const Payments = () => {
   };
 
   const openEditModal = (payment) => {
-    setSelectedPayment({ ...payment });
+    console.log('Opening edit modal for payment:', payment);
+    setSelectedPayment({
+      ...payment,
+      customer_id: payment.customer.id, // Extract customer_id from nested customer object
+    });
     setShowEditModal(true);
     setAnchorEl(null);
   };
@@ -286,6 +290,10 @@ const Payments = () => {
     return paymentDate.toDateString() === today.toDateString();
   });
   const todayAmount = todayPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
+
+  useEffect(() => {
+    console.log('Customers list:', customers);
+  }, [customers]);
 
   return (
     <Box sx={{ maxWidth: 1280, mx: 'auto', px: { xs: 2, sm: 3, lg: 4 } }}>
@@ -526,7 +534,7 @@ const Payments = () => {
                       <TableCell>Description</TableCell>
                       <TableCell>Created By</TableCell>
                       <TableCell>Date</TableCell>
-                      <TableCell align="right">Actions</TableCell>
+                      {isAdmin() && <TableCell align="right">Actions</TableCell>}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -579,14 +587,16 @@ const Payments = () => {
                             {formatDateTime(payment.date)}
                           </Typography>
                         </TableCell>
-                        <TableCell align="right">
-                          <IconButton
-                            onClick={(e) => handleMenuOpen(e, payment)}
-                            size="small"
-                          >
-                            <MoreVert />
-                          </IconButton>
-                        </TableCell>
+                        {isAdmin() && (
+                          <TableCell align="right">
+                            <IconButton
+                              onClick={(e) => handleMenuOpen(e, payment)}
+                              size="small"
+                            >
+                              <MoreVert />
+                            </IconButton>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -615,12 +625,14 @@ const Payments = () => {
                           </Typography>
                         </Box>
                       </Box>
-                      <IconButton
-                        onClick={(e) => handleMenuOpen(e, payment)}
-                        size="small"
-                      >
-                        <MoreVert />
-                      </IconButton>
+                      {isAdmin() && (
+                        <IconButton
+                          onClick={(e) => handleMenuOpen(e, payment)}
+                          size="small"
+                        >
+                          <MoreVert />
+                        </IconButton>
+                      )}
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                       <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main' }}>

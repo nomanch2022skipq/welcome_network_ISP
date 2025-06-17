@@ -401,7 +401,7 @@ const UserManagement = () => {
                       <TableCell>Role</TableCell>
                       <TableCell>Status</TableCell>
                       <TableCell>Created</TableCell>
-                      <TableCell align="right">Actions</TableCell>
+                      {isAdmin() && <TableCell align="right">Actions</TableCell>}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -442,14 +442,16 @@ const UserManagement = () => {
                             {formatDateTime(user.date_joined)}
                           </Typography>
                         </TableCell>
-                        <TableCell align="right">
-                          <IconButton
-                            onClick={(e) => handleMenuOpen(e, user)}
-                            size="small"
-                          >
-                            <MoreVert />
-                          </IconButton>
-                        </TableCell>
+                        {isAdmin() && (
+                          <TableCell align="right">
+                            <IconButton
+                              onClick={(e) => handleMenuOpen(e, user)}
+                              size="small"
+                            >
+                              <MoreVert />
+                            </IconButton>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -478,12 +480,14 @@ const UserManagement = () => {
                           </Typography>
                         </Box>
                       </Box>
-                      <IconButton
-                        onClick={(e) => handleMenuOpen(e, user)}
-                        size="small"
-                      >
-                        <MoreVert />
-                      </IconButton>
+                      {isAdmin() && (
+                        <IconButton
+                          onClick={(e) => handleMenuOpen(e, user)}
+                          size="small"
+                        >
+                          <MoreVert />
+                        </IconButton>
+                      )}
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                       <Chip

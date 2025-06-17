@@ -440,7 +440,7 @@ const CustomerManagement = () => {
                       <TableCell>Package Fee</TableCell>
                       <TableCell>Status</TableCell>
                       <TableCell>Created</TableCell>
-                      <TableCell align="right">Actions</TableCell>
+                      {isAdmin() && <TableCell align="right">Actions</TableCell>}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -479,14 +479,16 @@ const CustomerManagement = () => {
                             {formatDate(customer.created_at)}
                           </Typography>
                         </TableCell>
-                        <TableCell align="right">
-                          <IconButton
-                            onClick={(e) => handleMenuOpen(e, customer)}
-                            size="small"
-                          >
-                            <MoreVert />
-                          </IconButton>
-                        </TableCell>
+                        {isAdmin() && (
+                          <TableCell align="right">
+                            <IconButton
+                              onClick={(e) => handleMenuOpen(e, customer)}
+                              size="small"
+                            >
+                              <MoreVert />
+                            </IconButton>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -518,12 +520,14 @@ const CustomerManagement = () => {
                           </Typography>
                         </Box>
                       </Box>
-                      <IconButton
-                        onClick={(e) => handleMenuOpen(e, customer)}
-                        size="small"
-                      >
-                        <MoreVert />
-                      </IconButton>
+                      {isAdmin() && (
+                        <IconButton
+                          onClick={(e) => handleMenuOpen(e, customer)}
+                          size="small"
+                        >
+                          <MoreVert />
+                        </IconButton>
+                      )}
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
