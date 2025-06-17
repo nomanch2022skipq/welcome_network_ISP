@@ -30,6 +30,8 @@ import {
   CircularProgress,
   useTheme,
   useMediaQuery,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import {
   Add,
@@ -42,6 +44,8 @@ import {
   People,
   CheckCircle,
   Cancel,
+  Visibility,
+  VisibilityOff,
 } from '@mui/icons-material';
 
 const CustomerManagement = () => {
@@ -55,6 +59,7 @@ const CustomerManagement = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedCustomerForMenu, setSelectedCustomerForMenu] = useState(null);
   const [newCustomer, setNewCustomer] = useState({
@@ -83,13 +88,14 @@ const CustomerManagement = () => {
 
   useEffect(() => {
     fetchCustomers();
-  }, [searchTerm, pagination.currentPage, pagination.itemsPerPage]);
+  }, [searchTerm, pagination.currentPage, pagination.itemsPerPage, showInactive]);
 
   const fetchCustomers = async () => {
     try {
       setLoading(true);
       const params = {
-        page_size: 9999 // Fetch all customers for inspection
+        page_size: 9999, // Fetch all customers for inspection
+        is_active: !showInactive,
       };
       if (searchTerm) {
         params.search = searchTerm;
@@ -162,16 +168,27 @@ const CustomerManagement = () => {
     }
   };
 
-  const handleDeleteCustomer = async (customerId) => {
-    if (window.confirm('Are you sure you want to delete this customer?')) {
+  const handleDeactivateCustomer = async (customerId) => {
+    if (window.confirm('Are you sure you want to deactivate this customer?')) {
       try {
         await customerService.deleteCustomer(customerId);
         fetchCustomers();
-        showSuccess('Customer deleted successfully');
+        showSuccess('Customer deactivated successfully');
       } catch (error) {
-        console.error('Error deleting customer:', error);
-        showError('Error deleting customer');
+        console.error('Error deactivating customer:', error);
+        showError('Error deactivating customer');
       }
+    }
+  };
+
+  const handleReactivateCustomer = async (customer) => {
+    try {
+      await customerService.updateCustomer(customer.id, { ...customer, is_active: true });
+      fetchCustomers();
+      showSuccess('Customer reactivated successfully');
+    } catch (error) {
+      console.error('Error reactivating customer:', error);
+      showError('Error reactivating customer');
     }
   };
 
@@ -296,7 +313,7 @@ const CustomerManagement = () => {
         </Button>
       </Box>
 
-      {/* Search */}
+      {/* Search and Toggle */}
       <Card sx={{ mb: 3, p: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, alignItems: 'center' }}>
           <TextField
@@ -313,6 +330,14 @@ const CustomerManagement = () => {
             sx={{ minWidth: { xs: '100%', sm: 'auto' } }}
           >
             Clear
+          </Button>
+          <Button
+            variant={showInactive ? 'contained' : 'outlined'}
+            onClick={() => setShowInactive(!showInactive)}
+            startIcon={showInactive ? <VisibilityOff /> : <Visibility />}
+            sx={{ minWidth: { xs: '100%', sm: 'auto' } }}
+          >
+            {showInactive ? 'Show Active' : 'Show Inactive'}
           </Button>
         </Box>
       </Card>
@@ -421,7 +446,7 @@ const CustomerManagement = () => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h6" component="h3" sx={{ mb: 2, fontWeight: 600 }}>
-            Customer Records
+            {showInactive ? 'Inactive Customer Records' : 'Active Customer Records'}
           </Typography>
           
           {loading ? (
@@ -440,7 +465,7 @@ const CustomerManagement = () => {
                       <TableCell>Package Fee</TableCell>
                       <TableCell>Status</TableCell>
                       <TableCell>Created</TableCell>
-                      {isAdmin() && <TableCell align="right">Actions</TableCell>}
+                      <TableCell align="right">Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -479,16 +504,14 @@ const CustomerManagement = () => {
                             {formatDate(customer.created_at)}
                           </Typography>
                         </TableCell>
-                        {isAdmin() && (
-                          <TableCell align="right">
-                            <IconButton
-                              onClick={(e) => handleMenuOpen(e, customer)}
-                              size="small"
-                            >
-                              <MoreVert />
-                            </IconButton>
-                          </TableCell>
-                        )}
+                        <TableCell align="right">
+                          <IconButton
+                            onClick={(e) => handleMenuOpen(e, customer)}
+                            size="small"
+                          >
+                            <MoreVert />
+                          </IconButton>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -520,14 +543,12 @@ const CustomerManagement = () => {
                           </Typography>
                         </Box>
                       </Box>
-                      {isAdmin() && (
-                        <IconButton
-                          onClick={(e) => handleMenuOpen(e, customer)}
-                          size="small"
-                        >
-                          <MoreVert />
-                        </IconButton>
-                      )}
+                      <IconButton
+                        onClick={(e) => handleMenuOpen(e, customer)}
+                        size="small"
+                      >
+                        <MoreVert />
+                      </IconButton>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -564,6 +585,22 @@ const CustomerManagement = () => {
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1,
+              ml: -4,
+            },
+          },
+        }}
       >
         <MenuItem onClick={() => {
           openPaymentModal(selectedCustomerForMenu);
@@ -572,20 +609,31 @@ const CustomerManagement = () => {
           <Payment sx={{ mr: 1 }} />
           Add Payment
         </MenuItem>
-        <MenuItem onClick={() => {
-          openEditModal(selectedCustomerForMenu);
-          handleMenuClose();
-        }}>
-          <Edit sx={{ mr: 1 }} />
-          Edit
-        </MenuItem>
-        <MenuItem onClick={() => {
-          handleDeleteCustomer(selectedCustomerForMenu?.id);
-          handleMenuClose();
-        }}>
-          <Delete sx={{ mr: 1 }} />
-          Delete
-        </MenuItem>
+        {isAdmin() && [
+          <MenuItem key="edit" onClick={() => {
+            openEditModal(selectedCustomerForMenu);
+            handleMenuClose();
+          }}>
+            <Edit sx={{ mr: 1 }} />
+            Edit
+          </MenuItem>,
+          <MenuItem key="delete" onClick={() => {
+            handleDeactivateCustomer(selectedCustomerForMenu?.id);
+            handleMenuClose();
+          }}>
+            <Delete sx={{ mr: 1 }} />
+            Deactivate
+          </MenuItem>
+        ]}
+        {selectedCustomerForMenu && !selectedCustomerForMenu.is_active && (
+          <MenuItem onClick={() => {
+            handleReactivateCustomer(selectedCustomerForMenu);
+            handleMenuClose();
+          }}>
+            <CheckCircle sx={{ mr: 1 }} />
+            Reactivate
+          </MenuItem>
+        )}
       </Menu>
 
       {/* Add Customer Modal */}
@@ -689,6 +737,18 @@ const CustomerManagement = () => {
               onChange={(e) => setSelectedCustomer({ ...selectedCustomer, package_fee: e.target.value })}
               margin="normal"
               required
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={selectedCustomer?.is_active || false}
+                  onChange={(e) =>
+                    setSelectedCustomer({ ...selectedCustomer, is_active: e.target.checked })
+                  }
+                  name="is_active"
+                />
+              }
+              label="Active"
             />
           </DialogContent>
           <DialogActions>

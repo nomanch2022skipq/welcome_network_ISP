@@ -33,6 +33,8 @@ import {
   Select,
   useTheme,
   useMediaQuery,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import {
   Add,
@@ -170,14 +172,18 @@ const UserManagement = () => {
   };
 
   const handleDeleteUser = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
+    if (window.confirm('Are you sure you want to deactivate this user?')) {
       try {
         await userService.deleteUser(userId);
         fetchUsers();
-        showSuccess('User deleted successfully');
+        showSuccess('User deactivated successfully');
       } catch (error) {
-        console.error('Error deleting user:', error);
-        showError('Error deleting user');
+        console.error('Error deactivating user:', error);
+        if (error.response && error.response.data && error.response.data.error) {
+          showError(error.response.data.error);
+        } else {
+          showError('Error deactivating user');
+        }
       }
     }
   };
@@ -530,6 +536,22 @@ const UserManagement = () => {
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1,
+              ml: -4,
+            },
+          },
+        }}
       >
         <MenuItem onClick={() => {
           openEditModal(selectedUserForMenu);
@@ -641,6 +663,18 @@ const UserManagement = () => {
                 <MenuItem value="admin">Administrator</MenuItem>
               </Select>
             </FormControl>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={selectedUser?.is_active || false}
+                  onChange={(e) =>
+                    setSelectedUser({ ...selectedUser, is_active: e.target.checked })
+                  }
+                  name="is_active"
+                />
+              }
+              label="Active"
+            />
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setShowEditModal(false)}>Cancel</Button>

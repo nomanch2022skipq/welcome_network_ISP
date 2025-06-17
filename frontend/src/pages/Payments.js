@@ -685,6 +685,22 @@ const Payments = () => {
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1,
+              ml: -4,
+            },
+          },
+        }}
       >
         <MenuItem onClick={() => {
           openEditModal(selectedPaymentForMenu);
